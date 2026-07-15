@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Rhabit · Vídeos para publicidad</title>
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="marketing.css" />
+</head>
+<body class="mk">
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></symbol>
+    <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M4 9v6"/><path d="M7 6.5v11"/><path d="M7 12h10"/><path d="M17 6.5v11"/><path d="M20 9v6"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17"/><path d="M8 3v4"/><path d="M16 3v4"/></symbol>
+    <symbol id="i-swipe" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M7 9l-3 3 3 3"/><path d="M17 9l3 3-3 3"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6.5 8v5l-3 1.5V13z"/></symbol>
+  </svg>
+
+  <header class="mk-top">
+    <div class="mk-top__brand">
+      <span class="mk-logo"><svg class="ico"><use href="#i-video"/></svg></span>
+      <div>
+        <strong>Rhabit · Vídeos para publicidad</strong>
+        <span>Clips 9:16 · 1080×1920 · elige pose y color, descarga directa</span>
+      </div>
+    </div>
+    <div class="mk-controls">
+      <div class="mk-field">
+        <span>Pose</span>
+        <div class="seg" id="mk-pose">
+          <button type="button" data-pose="iso" class="on">Isométrico</button>
+          <button type="button" data-pose="flat">Plano</button>
+        </div>
+      </div>
+      <label class="mk-field">
+        <span>Fondo</span>
+        <input type="color" id="mk-color" value="#202124" />
+      </label>
+    </div>
+  </header>
+
+  <main class="clips" id="clips">
+
+    <article class="clip" data-base="exercise" data-name="rhabit-entreno-guiado">
+      <div class="clip__video">
+        <video autoplay loop muted playsinline preload="auto"></video>
+        <button class="clip__full" type="button" aria-label="Pantalla completa"><svg class="ico"><use href="#i-expand"/></svg></button>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-dumbbell"/></svg> Entrenos</span>
+        <h2>Entrena con guía visual</h2>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
+    <article class="clip" data-base="calendar" data-name="rhabit-calendario">
+      <div class="clip__video">
+        <video autoplay loop muted playsinline preload="auto"></video>
+        <button class="clip__full" type="button" aria-label="Pantalla completa"><svg class="ico"><use href="#i-expand"/></svg></button>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-calendar"/></svg> Organización</span>
+        <h2>Tu mes entero de un vistazo</h2>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
+    <article class="clip" data-base="filter" data-name="rhabit-filtro-habito">
+      <div class="clip__video">
+        <video autoplay loop muted playsinline preload="auto"></video>
+        <button class="clip__full" type="button" aria-label="Pantalla completa"><svg class="ico"><use href="#i-expand"/></svg></button>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-filter"/></svg> Organización</span>
+        <h2>Filtra el mes por hábito</h2>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
+    <article class="clip" data-base="swipe" data-name="rhabit-swipe-habitos">
+      <div class="clip__video">
+        <video autoplay loop muted playsinline preload="auto"></video>
+        <button class="clip__full" type="button" aria-label="Pantalla completa"><svg class="ico"><use href="#i-expand"/></svg></button>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-swipe"/></svg> Hábitos</span>
+        <h2>Repasa tu día con un swipe</h2>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
+    <article class="clip" data-base="swipe2" data-name="rhabit-swipe-anuncio">
+      <div class="clip__video">
+        <video autoplay loop muted playsinline preload="auto"></video>
+        <button class="clip__full" type="button" aria-label="Pantalla completa"><svg class="ico"><use href="#i-expand"/></svg></button>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-swipe"/></svg> Hábitos</span>
+        <h2>Swipe de hábitos · anuncio</h2>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
+    <article class="clip" data-base="gym" data-name="rhabit-registro-entreno">
+      <div class="clip__video">
+        <video autoplay loop muted playsinline preload="auto"></video>
+        <button class="clip__full" type="button" aria-label="Pantalla completa"><svg class="ico"><use href="#i-expand"/></svg></button>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-dumbbell"/></svg> Entrenos</span>
+        <h2>Registra cada serie</h2>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
+  </main>
+
+  <div class="mk-light" id="mk-light" hidden>
+    <div class="mk-light__box"><video id="mk-light-video" loop muted playsinline controls></video></div>
+  </div>
+
+  <script src="marketing.js"></script>
+</body>
+</html>

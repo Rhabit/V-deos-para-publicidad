@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Render</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    html, body { margin: 0; background: transparent; }   /* alfa: se compone el color en la app */
+    #stage {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      background: transparent;
+    }
+    #stage .phone-stage { perspective: 1400px; }          /* como la web: perspectiva en el padre directo */
+    #stage .phone {
+      width: 266px !important; height: auto !important;   /* tamaño EXACTO de la web: el contenido no se descoloca */
+      box-shadow: 0 0 0 2px rgba(0,0,0,.45) inset;        /* sin sombra proyectada detrás */
+    }
+    /* Isométrico idéntico a la web (tilt-r); flat = frontal.
+       El móvil del clip "filter" se excluye: su transform (pose + animación
+       rápida tipo short/edit) lo controla script.js vía Web Animations. */
+    #stage.iso  .phone-holder:not([data-phone="filter"]):not([data-phone="swipe2"]) .phone { transform: rotateY(-16deg) rotateX(4deg) rotateZ(1deg) !important; }
+    #stage.flat .phone-holder:not([data-phone="filter"]):not([data-phone="swipe2"]) .phone { transform: none !important; }
+    .phone-holder { display: none; }
+    .phone-holder.on { display: block; }
+  </style>
+</head>
+<body>
+  <svg id="mk-sprite" width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M12 2.5c2.8 2 4.2 5 4.2 8.5L14 14h-4L7.8 11c0-3.5 1.4-6.5 4.2-8.5z"/><circle cx="12" cy="9" r="1.4"/><path d="M9.5 14.5 7 17c-1 1-1 3-1 3s2 0 3-1"/><path d="M14.5 14.5 17 17c1 1 1 3 1 3s-2 0-3-1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5 9 17.5 20 6.5"/></symbol>
+    <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M4 9v6"/><path d="M7 6.5v11"/><path d="M7 12h10"/><path d="M17 6.5v11"/><path d="M20 9v6"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.5C10.5 5.3 8 4.7 4 5.2v13c4-.5 6.5.1 8 1.3 1.5-1.2 4-1.8 8-1.3v-13c-4-.5-6.5.1-8 1.3z"/><path d="M12 6.5v13"/></symbol>
+    <symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 3.2c3.4 3.8 6 6.4 6 9.8a6 6 0 0 1-12 0c0-3.4 2.6-6 6-9.8z"/></symbol>
+    <symbol id="i-wind" viewBox="0 0 24 24"><path d="M4 8.5h9.5a2.5 2.5 0 1 0-2.5-2.5"/><path d="M4 12.5h13a2.5 2.5 0 1 1-2.5 2.5"/><path d="M4 16.5h6.5a2 2 0 1 1-2 2"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></symbol>
+    <symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 18.5v-2.5"/><path d="M9 18.5v-6"/><path d="M14 18.5v-9.5"/><path d="M19 18.5v-13"/></symbol>
+    <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3" y="8.5" width="15" height="8" rx="2"/><path d="M20.5 11.5v3"/><rect x="5" y="10.5" width="8" height="4" rx="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9.5 12 15l6-5.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5 3.5 8 12 12.5 20.5 8 12 3.5z"/><path d="M4 12l8 4.3L20 12"/><path d="M4 16l8 4.3L20 16"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-13 0 9-5 14-13 14"/><path d="M5 19c3-5 6-7 10-8.5"/></symbol>
+    <symbol id="i-swipe" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M7 9l-3 3 3 3"/><path d="M17 9l3 3-3 3"/></symbol>
+  </svg>
+
+  <div id="stage">
+    <!-- 1 · Ejercicio -->
+    <div class="phone-holder" data-phone="exercise">
+      <div class="phone-stage"><div class="phone">
+        <img class="phone__screen" src="assets/ex-curl-nobg.webp" alt="" aria-hidden="true" />
+      </div></div>
+    </div>
+
+    <!-- 2 · Calendario -->
+    <div class="phone-holder" data-phone="calendar">
+      <div class="phone-stage"><div class="phone">
+        <div class="app-screen app-cal" id="cal-screen" aria-hidden="true">
+          <div class="app-bar"><span>9:41</span><span class="app-bar__ico"><svg class="ico"><use href="#i-signal"/></svg><svg class="ico"><use href="#i-battery"/></svg></span></div>
+          <div class="cal-head"><button class="cal-nav" data-cal-prev aria-label="Mes anterior">‹</button><div class="cal-title" id="cal-title">Julio <b>2026</b></div><button class="cal-nav" data-cal-next aria-label="Mes siguiente">›</button></div>
+          <div class="cal-filter"><span class="cal-dot"></span><span>Todos los hábitos</span> <svg class="ico cal-chev"><use href="#i-chevron-down"/></svg></div>
+          <div class="cal-weekdays"><span class="cal-wk"></span><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <div class="sch"><div class="sch-title" id="sch-title">Hoy · <b>Miércoles 3</b></div><div class="sch-scroll" id="sch-scroll"><div class="sch-body" id="sch-body"></div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- 5 · Filtro por hábito -->
+    <div class="phone-holder" data-phone="filter">
+      <div class="phone-stage"><div class="phone">
+        <div class="app-screen app-cal app-filter" id="filter-screen" aria-hidden="true">
+          <div class="app-bar"><span>9:41</span><span class="app-bar__ico"><svg class="ico"><use href="#i-signal"/></svg><svg class="ico"><use href="#i-battery"/></svg></span></div>
+          <div class="fcal-month" id="fcal-month">
+          <div class="cal-head"><button class="cal-nav" aria-hidden="true">‹</button><div class="cal-title" id="fcal-title">Julio <b>2026</b></div><button class="cal-nav" aria-hidden="true">›</button></div>
+          <div class="fcal-filterwrap">
+            <button class="cal-filter" id="fcal-filter" type="button"><span class="cal-dot" id="fcal-dot"></span><span id="fcal-label">Todos los hábitos</span> <svg class="ico cal-chev"><use href="#i-chevron-down"/></svg></button>
+            <div class="fcal-menu" id="fcal-menu" hidden>
+              <div class="fcal-menu__title">Filtrar por hábito</div>
+              <button class="fcal-opt" data-opt="all" style="--oc:#c2b8a8"><span class="fcal-opt__ico" style="background:rgba(194,184,168,.16)"><svg class="ico"><use href="#i-layers"/></svg></span><span class="fcal-opt__t">Todos los hábitos</span><svg class="ico fcal-check"><use href="#i-check"/></svg></button>
+              <button class="fcal-opt" data-opt="gimnasio" style="--oc:#22c55e"><span class="fcal-opt__ico" style="background:rgba(34,197,94,.22)"><svg class="ico"><use href="#i-dumbbell"/></svg></span><span class="fcal-opt__t">Gimnasio</span><svg class="ico fcal-check"><use href="#i-check"/></svg></button>
+              <button class="fcal-opt" data-opt="leer" style="--oc:#f5b14a"><span class="fcal-opt__ico" style="background:rgba(245,177,74,.22)"><svg class="ico"><use href="#i-book"/></svg></span><span class="fcal-opt__t">Leer</span><svg class="ico fcal-check"><use href="#i-check"/></svg></button>
+              <button class="fcal-opt" data-opt="agua" style="--oc:#38bdf8"><span class="fcal-opt__ico" style="background:rgba(56,189,248,.22)"><svg class="ico"><use href="#i-droplet"/></svg></span><span class="fcal-opt__t">Beber agua</span><svg class="ico fcal-check"><use href="#i-check"/></svg></button>
+              <button class="fcal-opt" data-opt="meditar" style="--oc:#9b8cff"><span class="fcal-opt__ico" style="background:rgba(155,140,255,.22)"><svg class="ico"><use href="#i-wind"/></svg></span><span class="fcal-opt__t">Meditar</span><svg class="ico fcal-check"><use href="#i-check"/></svg></button>
+            </div>
+          </div>
+          <div class="cal-weekdays"><span class="cal-wk"></span><span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+          <div class="cal-grid" id="fcal-grid"></div>
+          <div class="fcal-caption" id="fcal-caption"></div>
+          <div class="sch" id="fsch">
+            <div class="sch-title" id="fsch-title">Hoy</div>
+            <div class="sch-scroll" id="fsch-scroll"><div class="sch-body" id="fsch-body"></div></div>
+          </div>
+          </div><!-- /fcal-month -->
+          <div class="fcal-year" id="fcal-year" hidden>
+            <div class="fcal-year__head"><span class="fcal-year__dot" id="fcal-year-dot"></span><b id="fcal-year-title">Gimnasio</b><span class="fcal-year__yr">2026</span></div>
+            <div class="fcal-year__grid" id="fcal-year-grid"></div>
+            <div class="fcal-year__foot" id="fcal-year-foot"></div>
+          </div>
+          <div class="mk-pointer" id="fcal-pointer" aria-hidden="true"></div>
+        </div>
+      </div></div>
+      <div class="mk-card" id="fcal-card" aria-hidden="true">
+        <span class="mk-card__kick" id="fcal-cardkick"></span>
+        <span class="mk-card__title" id="fcal-cardtitle"></span>
+      </div>
+    </div>
+
+    <!-- 3 · Swipe -->
+    <div class="phone-holder" data-phone="swipe">
+      <div class="phone-stage"><div class="phone">
+        <div class="app-screen app-swipe" id="swipe-screen">
+          <div class="app-bar"><span>9:41</span><span class="app-bar__ico"><svg class="ico"><use href="#i-signal"/></svg><svg class="ico"><use href="#i-battery"/></svg></span></div>
+          <div class="sw-head"><div class="sw-head__text"><span class="sw-kicker">Revisar hábitos</span><h4 class="sw-title">Swipe de hábitos</h4></div></div>
+          <div class="sw-prog" id="sw-prog"></div>
+          <div class="sw-deck" id="sw-deck"></div>
+          <div class="sw-actions">
+            <button class="sw-btn sw-btn--fail" data-act="fail" aria-label="No hecho"><svg class="ico"><use href="#i-x"/></svg></button>
+            <button class="sw-btn sw-btn--done" data-act="done" aria-label="Hecho"><svg class="ico"><use href="#i-check"/></svg></button>
+            <button class="sw-btn sw-btn--later" data-act="later" aria-label="Más tarde"><svg class="ico"><use href="#i-clock"/></svg></button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- 6 · Swipe (anuncio App Store: recorre todas las tarjetas) -->
+    <div class="phone-holder" data-phone="swipe2">
+      <div class="phone-stage"><div class="phone">
+        <div class="app-screen app-swipe" id="swad-screen" aria-hidden="true">
+          <div class="app-bar"><span>9:41</span><span class="app-bar__ico"><svg class="ico"><use href="#i-signal"/></svg><svg class="ico"><use href="#i-battery"/></svg></span></div>
+          <div class="sw-head"><div class="sw-head__text"><span class="sw-kicker">Revisar hábitos</span><h4 class="sw-title">Swipe de hábitos</h4></div></div>
+          <div class="sw-prog" id="swad-prog"></div>
+          <div class="sw-deck" id="swad-deck"></div>
+          <div class="sw-actions">
+            <button class="sw-btn sw-btn--fail" data-act="fail" aria-label="No hecho"><svg class="ico"><use href="#i-x"/></svg></button>
+            <button class="sw-btn sw-btn--done" data-act="done" aria-label="Hecho"><svg class="ico"><use href="#i-check"/></svg></button>
+            <button class="sw-btn sw-btn--later" data-act="later" aria-label="Más tarde"><svg class="ico"><use href="#i-clock"/></svg></button>
+          </div>
+          <div class="mk-pointer" id="swad-pointer" aria-hidden="true"></div>
+        </div>
+      </div></div>
+      <div class="mk-card" id="swad-card" aria-hidden="true">
+        <span class="mk-card__kick" id="swad-cardkick"></span>
+        <span class="mk-card__title" id="swad-cardtitle"></span>
+      </div>
+    </div>
+
+    <!-- 4 · Gym -->
+    <div class="phone-holder" data-phone="gym">
+      <div class="phone-stage"><div class="phone">
+        <div class="app-screen app-gym" id="gym-screen">
+          <div class="app-bar"><span>9:41</span><span class="app-bar__ico"><svg class="ico"><use href="#i-signal"/></svg><svg class="ico"><use href="#i-battery"/></svg></span></div>
+          <div class="gym-stats">
+            <div class="gym-stat"><svg class="ico"><use href="#i-clock"/></svg><b id="gym-time">12:04</b><span>Tiempo</span></div>
+            <div class="gym-statdiv"></div>
+            <div class="gym-stat"><b id="gym-vol">0</b><span>Volumen</span></div>
+            <div class="gym-statdiv"></div>
+            <div class="gym-stat"><b id="gym-sets">0</b><span>Series</span></div>
+            <div class="gym-statdiv"></div>
+            <button type="button" class="gym-stat gym-stat--musc" id="gym-musc-btn" aria-label="Ver músculos trabajados"><span class="gym-musc-top"><img class="gym-musc-ico" src="assets/musculos/cuerpo.png" alt="" /><b id="gym-musc">0</b></span><span>Músculos</span></button>
+          </div>
+          <div class="gym-scroll" id="gym-scroll"></div>
+          <div class="exmodal" id="exmodal" hidden><div class="exmodal__backdrop" data-exclose></div><div class="exmodal__sheet"><div class="exmodal__grab"></div><button class="exmodal__close" data-exclose><svg class="ico"><use href="#i-x"/></svg></button><video class="exmodal__video" id="exmodal-video" loop muted playsinline preload="none"></video><div class="exmodal__name" id="exmodal-name"></div><div class="exmodal__prs" id="exmodal-prs"></div><div class="exmodal__setstitle">Series de hoy</div><div class="exmodal__sets" id="exmodal-sets"></div></div></div>
+          <div class="exmodal muscmodal" id="muscmodal" hidden><div class="exmodal__backdrop" data-muscclose></div><div class="exmodal__sheet"><div class="exmodal__grab"></div><button class="exmodal__close" data-muscclose><svg class="ico"><use href="#i-x"/></svg></button><div class="exmodal__name">Músculos trabajados</div><div class="bodymap" id="bodymap"></div><div class="musclist" id="musclist"></div></div></div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <script src="i18n.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Muestra solo el móvil pedido (?p=...&pose=iso|flat).
+    const params = new URLSearchParams(location.search);
+    const which = params.get("p") || "swipe";
+    const pose = params.get("pose") === "flat" ? "flat" : "iso";
+    document.getElementById("stage").classList.add(pose);
+    const holder = document.querySelector(`.phone-holder[data-phone="${which}"]`);
+    if (holder) holder.classList.add("on");
+    // Reinicia la animación en bucle para grabar ciclos limpios.
+    const ID = { calendar: "cal-screen", swipe: "swipe-screen", gym: "gym-screen", filter: "filter-screen", swipe2: "swad-screen" }[which];
+    window.__mkReplayLoop = (periodMs) => {
+      const fire = () => { if (ID && window.__mkReplay && window.__mkReplay[ID]) window.__mkReplay[ID](); };
+      fire();
+      if (periodMs) setInterval(fire, periodMs);
+    };
+    window.__ready = true;
+  </script>
+</body>
+</html>

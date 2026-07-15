@@ -1,0 +1,80 @@
+/* ============================================================
+   Galería de vídeos publicitarios (clips alfa 9:16 + color/pose)
+   ============================================================ */
+:root{ --clipbg:#202124; }
+
+body.mk{ min-height:100vh; background:var(--bg); }
+
+/* ---------- Cabecera ---------- */
+.mk-top{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  padding:14px clamp(16px,4vw,40px);
+  background:rgba(14,11,9,.9);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.mk-logo{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:12px;background:linear-gradient(150deg,#ff7a1a,#f5b14a)}
+.mk-logo .ico{width:22px;height:22px;stroke:#1a1206;stroke-width:2.2}
+.mk-top__brand{display:flex;align-items:center;gap:14px}
+.mk-top__brand strong{display:block;font-size:16px;font-weight:800;letter-spacing:-.01em}
+.mk-top__brand span{display:block;font-size:12.5px;color:var(--dim)}
+
+.mk-controls{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.mk-field{display:flex;flex-direction:column;gap:5px}
+.mk-field>span{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
+.mk-field input[type=color]{width:56px;height:38px;padding:2px;border:1px solid var(--border);border-radius:10px;background:#1a140f;cursor:pointer}
+
+.seg{display:inline-flex;background:#1a140f;border:1px solid var(--border);border-radius:11px;padding:3px;gap:3px}
+.seg button{
+  border:0;background:transparent;color:var(--dim);cursor:pointer;
+  padding:7px 14px;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;transition:.15s var(--ease);
+}
+.seg button.on{background:linear-gradient(150deg,#ff7a1a,#f5b14a);color:#1a1206}
+
+/* ---------- Rejilla de clips ---------- */
+.clips{
+  display:grid;gap:clamp(20px,3vw,34px);
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  padding:clamp(22px,4vw,48px);max-width:1500px;margin:0 auto;
+}
+.clip{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:24px;overflow:hidden;background:rgba(255,255,255,.02)}
+.clip__video{position:relative;background:var(--clipbg);transition:background .2s}
+.clip__video video{display:block;width:100%;aspect-ratio:9/16;object-fit:cover}
+.clip__full{
+  position:absolute;top:12px;right:12px;width:38px;height:38px;display:grid;place-items:center;
+  border:0;border-radius:10px;cursor:pointer;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);
+  color:#fff;opacity:0;transition:opacity .2s;
+}
+.clip__video:hover .clip__full{opacity:1}
+.clip__full .ico{width:18px;height:18px;stroke:#fff}
+
+.clip__meta{padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.clip__meta .pill{
+  align-self:flex-start;display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:700;color:var(--gold);
+  background:rgba(245,177,74,.1);border:1px solid rgba(245,177,74,.3);padding:4px 11px;border-radius:999px;
+}
+.clip__meta .pill .ico{width:14px;height:14px;stroke:var(--gold)}
+.clip__meta h2{font-size:19px;font-weight:800;letter-spacing:-.01em}
+
+.mk-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit;
+  padding:12px 16px;border:1px solid var(--border);background:#1a140f;color:var(--text);transition:.18s var(--ease);
+}
+.mk-btn .ico{width:18px;height:18px}
+.mk-btn--primary{border:0;color:#1a1206;background:linear-gradient(150deg,#ff7a1a,#f5b14a)}
+.mk-btn--primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.mk-btn[disabled]{opacity:.65;cursor:progress;transform:none;filter:none}
+
+/* ---------- Lightbox ---------- */
+.mk-light{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:rgba(0,0,0,.86);backdrop-filter:blur(6px);padding:24px}
+.mk-light[hidden]{display:none}
+
+#mk-banner{
+  position:fixed;left:0;right:0;bottom:0;z-index:200;
+  padding:11px 18px;text-align:center;font-size:13.5px;font-weight:700;
+  background:#7a1a1a;color:#ffe;border-top:1px solid #a33;
+}
+.mk-light__box{background:var(--clipbg);border-radius:18px;overflow:hidden}
+.mk-light video{display:block;max-height:90vh;aspect-ratio:9/16}
