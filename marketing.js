@@ -33,50 +33,102 @@
   colorInput.addEventListener("input", () => root.style.setProperty("--clipbg", colorInput.value));
   root.style.setProperty("--clipbg", colorInput.value);
 
-  // ---- Descarga: compone color + pose sobre el clip alfa ----
+  // ---- Descarga ----
   clips.forEach((clip) => {
     clip.querySelector("[data-dl]").addEventListener("click", (e) => download(clip, e.currentTarget));
   });
 
-  // Descarga: SIEMPRE vía el servidor (ffmpeg) -> MP4 válido con color correcto.
-  // Si el servidor no soporta /render, avisa (no genera un webm de peor calidad).
+  // Si hay server.py (uso local) se usa -> MP4 con ffmpeg (mejor calidad).
+  // En el sitio estático (GitHub Pages) no hay servidor: se compone y codifica
+  // EN EL NAVEGADOR (canvas + MediaRecorder), así funciona para cualquier visitante.
+  let serverOk = false;
+  fetch("/render?ping=1", { method: "GET" })
+    .then((r) => { serverOk = r.status === 400 || r.ok; }) // 400 = endpoint vivo (params inválidos)
+    .catch(() => { serverOk = false; });
+
   async function download(clip, btn) {
     if (btn.disabled) return;
     const prev = btn.innerHTML;
-    btn.disabled = true; btn.innerHTML = "Procesando…";
+    btn.disabled = true; btn.innerHTML = "Generando…";
     try {
-      const color = (colorInput.value || "#202124").replace("#", "");
-      const url = `/render?clip=${clip.dataset.base}&pose=${pose}&color=${color}`;
-      const r = await fetch(url);
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      const blob = await r.blob();
-      if (!blob || blob.type.indexOf("video") < 0 || blob.size < 1000) throw new Error("respuesta inválida");
-      const u = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = u; a.download = `${clip.dataset.name}-${pose}.mp4`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(u), 6000);
+      if (serverOk) {
+        try { await serverDownload(clip); }
+        catch (e) { await clientDownload(clip); }
+      } else {
+        await clientDownload(clip);
+      }
     } catch (err) {
-      alert("Para descargar el vídeo tienes que arrancar el servidor de render:\n\n" +
-            "    bash start.sh\n\n" +
-            "(No sirve 'python3 -m http.server'; necesita server.py + ffmpeg.)");
+      alert("No se pudo generar el vídeo en este navegador. Prueba con Chrome de escritorio.");
     } finally {
       btn.disabled = false; btn.innerHTML = prev;
     }
   }
 
-  // Aviso al cargar si el servidor de render no está disponible.
-  fetch("/render?ping=1").then((r) => {
-    if (r.status === 400) return; // 400 = endpoint vivo (params invalidos) -> OK
-    if (!r.ok) showServerBanner();
-  }).catch(() => showServerBanner());
+  // Descarga vía servidor (ffmpeg) -> MP4 válido con color correcto (solo en local).
+  async function serverDownload(clip) {
+    const color = (colorInput.value || "#202124").replace("#", "");
+    const r = await fetch(`/render?clip=${clip.dataset.base}&pose=${pose}&color=${color}`);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const blob = await r.blob();
+    if (!blob || blob.type.indexOf("video") < 0 || blob.size < 1000) throw new Error("respuesta inválida");
+    saveBlob(blob, `${clip.dataset.name}-${pose}.mp4`);
+  }
 
-  function showServerBanner() {
-    if (document.getElementById("mk-banner")) return;
-    const b = document.createElement("div");
-    b.id = "mk-banner";
-    b.textContent = "⚠ Servidor de vídeo no detectado — arranca con: bash start.sh  (para poder descargar)";
-    document.body.appendChild(b);
+  // Descarga en el navegador: pinta cada fotograma del clip (con alfa) sobre el
+  // color elegido en un canvas 1080x1920 y lo graba con MediaRecorder. El color
+  // queda "quemado" en el vídeo, así que sirve para redes (sin transparencia).
+  function clientDownload(clip) {
+    return new Promise((resolve, reject) => {
+      const color = colorInput.value || "#202124";
+      const v = document.createElement("video");
+      v.src = srcFor(clip.dataset.base);
+      v.muted = true; v.playsInline = true; v.loop = false; v.preload = "auto";
+      v.onerror = () => reject(new Error("no carga el clip"));
+      v.onloadedmetadata = () => {
+        const W = v.videoWidth || 1080, H = v.videoHeight || 1920;
+        const canvas = document.createElement("canvas");
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext("2d", { alpha: false });
+        const cands = ["video/mp4;codecs=h264", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+        const mime = window.MediaRecorder && cands.find((t) => MediaRecorder.isTypeSupported(t));
+        if (!mime) { reject(new Error("MediaRecorder no soportado")); return; }
+        const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm";
+        const stream = canvas.captureStream(60);
+        const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12000000 });
+        const chunks = [];
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = () => {
+          v.removeAttribute("src"); v.load();
+          const blob = new Blob(chunks, { type: mime.split(";")[0] });
+          if (blob.size < 1000) { reject(new Error("grabación vacía")); return; }
+          saveBlob(blob, `${clip.dataset.name}-${pose}.${ext}`);
+          resolve();
+        };
+        let raf = 0;
+        const draw = () => {
+          ctx.fillStyle = color; ctx.fillRect(0, 0, W, H);
+          try { ctx.drawImage(v, 0, 0, W, H); } catch (e) {}
+          raf = requestAnimationFrame(draw);
+        };
+        const finish = () => { if (rec.state !== "inactive") { cancelAnimationFrame(raf); rec.stop(); } };
+        v.onended = finish;
+        // corta por seguridad si el vídeo no dispara 'ended'
+        const guard = setTimeout(finish, ((v.duration || 16) + 2) * 1000);
+        rec.onstop = ((orig) => () => { clearTimeout(guard); orig(); })(rec.onstop);
+        v.currentTime = 0;
+        rec.start();
+        draw();
+        v.play().catch((e) => reject(e));
+      };
+    });
+  }
+
+  function saveBlob(blob, name) {
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = u; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 8000);
   }
 
   // ---- Lightbox ----
