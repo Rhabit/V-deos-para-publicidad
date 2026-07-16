@@ -76,8 +76,8 @@
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(255,255,255,0.92)"; ctx.font = `600 44px ${FONT}`;
     ctx.fillText(dateStr(now), W / 2, 248);
-    ctx.fillStyle = "#fff"; ctx.font = `300 300px ${FONT}`;
-    ctx.fillText(time, W / 2, 560);
+    ctx.fillStyle = "#fff"; ctx.font = `600 340px ${FONT}`;
+    ctx.fillText(time, W / 2, 580);
   }
   function notifHeight(n) {
     ctx.font = `500 36px ${FONT}`;
@@ -115,15 +115,22 @@
   }
   function drawNotifs(t) {
     const x = 48, w = W - 2 * 48, gap = 26, heights = notifs.map(notifHeight);
-    let y = 1030;
+    const startY = 1030, bottomMargin = 70;
+    const total = heights.reduce((a, b) => a + b, 0) + gap * (heights.length - 1);
+    const avail = H - bottomMargin - startY;
+    const s = total > avail ? avail / total : 1;
+    ctx.save();
+    ctx.translate(x, startY); ctx.scale(s, s);
+    let y = 0;
     for (let i = 0; i < notifs.length; i++) {
       const appearAt = 0.35 + i * 0.30, fadeOut = CYCLE - 0.7;
       let op = 0, slide = 0;
       if (t >= appearAt) { const k = Math.min(1, (t - appearAt) / 0.5); op = k; slide = (1 - ease(k)) * 70; }
       if (t >= fadeOut) op *= Math.max(0, 1 - (t - fadeOut) / 0.6);
-      if (op > 0.002) drawNotif(x, y - slide, w, heights[i], notifs[i], op);
+      if (op > 0.002) drawNotif(0, y - slide, w, heights[i], notifs[i], op);
       y += heights[i] + gap;
     }
+    ctx.restore();
   }
   function render(t) { drawWallpaper(); drawClock(); drawNotifs(t); }
   let encoding = false;
