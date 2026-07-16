@@ -135,63 +135,93 @@
   }
 
   // Descarga en el navegador: pinta cada fotograma del clip (con alfa) sobre el
-  // color elegido en un canvas 1080x1920 y lo graba con MediaRecorder. El color
-  // queda "quemado" en el vídeo, así que sirve para redes (sin transparencia).
-  // El clip se baja ENTERO a memoria antes de grabar: reproducirlo en streaming
-  // por red se atasca y grabaría un fotograma congelado.
+  // color elegido en un canvas 1080x1920. Intenta MP4 real (WebCodecs H.264) y si
+  // no está disponible cae a MediaRecorder (WebM en Chrome/Firefox, MP4 en Safari).
+  // El clip se baja ENTERO a memoria antes: en streaming por red se atasca.
   async function clientDownload(clip) {
     const color = colorInput.value || "#202124";
     const v0 = clip.querySelector("video");
     const resp = await fetch((v0 && v0.currentSrc) || srcFor(clip.dataset.base));
     if (!resp.ok) throw new Error("no carga el clip");
     const clipUrl = URL.createObjectURL(await resp.blob());
+    const nameBase = `${clip.dataset.name}-${pose}${lang === "en" ? "-en" : ""}`;
     try {
-      await new Promise((resolve, reject) => {
-        const v = document.createElement("video");
-        v.src = clipUrl; v.muted = true; v.playsInline = true; v.loop = false; v.preload = "auto";
-        v.onerror = () => reject(new Error("no decodifica el clip"));
-        v.onloadedmetadata = () => {
-          const W = v.videoWidth || 1080, H = v.videoHeight || 1920;
-          const canvas = document.createElement("canvas");
-          canvas.width = W; canvas.height = H;
-          const ctx = canvas.getContext("2d", { alpha: false });
-          const cands = ["video/mp4;codecs=h264", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
-          const mime = window.MediaRecorder && cands.find((t) => MediaRecorder.isTypeSupported(t));
-          if (!mime) { reject(new Error("MediaRecorder no soportado")); return; }
-          const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm";
-          const rec = new MediaRecorder(canvas.captureStream(60), { mimeType: mime, videoBitsPerSecond: 12000000 });
-          const chunks = [];
-          rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-          let guard = 0;
-          rec.onstop = () => {
-            clearTimeout(guard);
-            const blob = new Blob(chunks, { type: mime.split(";")[0] });
-            if (blob.size < 1000) { reject(new Error("grabación vacía")); return; }
-            saveBlob(blob, `${clip.dataset.name}-${pose}${lang === "en" ? "-en" : ""}.${ext}`);
-            resolve();
-          };
-          let raf = 0;
-          const draw = () => {
-            ctx.fillStyle = color; ctx.fillRect(0, 0, W, H);
-            try { ctx.drawImage(v, 0, 0, W, H); } catch (e) {}
-            raf = requestAnimationFrame(draw);
-          };
-          const finish = () => { if (rec.state !== "inactive") { cancelAnimationFrame(raf); rec.stop(); } };
-          v.onended = finish;
-          const startRec = () => {
-            if (rec.state !== "inactive") return;
-            guard = setTimeout(finish, ((v.duration || 16) + 3) * 1000);
-            rec.start(); draw(); v.play().catch(reject);
-          };
-          v.currentTime = 0;
-          // Arranca cuando puede reproducir sin cortes (desde blob es casi inmediato).
-          if (v.readyState >= 3) startRec();
-          else { v.oncanplaythrough = startRec; setTimeout(startRec, 1200); }
-        };
-      });
+      const v = document.createElement("video");
+      v.src = clipUrl; v.muted = true; v.playsInline = true; v.loop = false; v.preload = "auto";
+      await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error("no decodifica el clip")); });
+      const W = v.videoWidth || 1080, H = v.videoHeight || 1920;
+      const canvas = document.createElement("canvas"); canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (await encodeClipMp4(v, canvas, ctx, color, W, H, nameBase)) { v.removeAttribute("src"); v.load(); return; }
+      await recordMediaRecorder(v, canvas, ctx, color, W, H, nameBase);
     } finally {
       setTimeout(() => URL.revokeObjectURL(clipUrl), 10000);
     }
+  }
+
+  // MP4 real: reproduce el clip y codifica cada fotograma con WebCodecs H.264.
+  async function encodeClipMp4(v, canvas, ctx, color, W, H, nameBase) {
+    if (!window.mp4Support || !window.mp4Support() || !v.requestVideoFrameCallback) return false;
+    const enc = await window.makeMp4Encoder(W, H, 60, 12000000);
+    if (!enc) return false;
+    let n = 0;
+    try {
+      await new Promise((resolve, reject) => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        const onFrame = (now, meta) => {
+          if (done) return;
+          ctx.fillStyle = color; ctx.fillRect(0, 0, W, H);
+          try { ctx.drawImage(v, 0, 0, W, H); } catch (e) {}
+          const ts = (meta && meta.mediaTime != null ? meta.mediaTime : n / 60) * 1e6;
+          enc.addFrame(canvas, ts, n % 120 === 0).then(() => {
+            n++;
+            if (v.ended) finish(); else v.requestVideoFrameCallback(onFrame);
+          }).catch(reject);
+        };
+        v.onended = finish;
+        v.currentTime = 0;
+        v.requestVideoFrameCallback(onFrame);
+        v.play().catch(reject);
+        setTimeout(finish, ((v.duration || 16) + 3) * 1000);
+      });
+      if (n < 2) throw new Error("sin frames");
+      const blob = await enc.finish();
+      if (blob.size < 1000) throw new Error("mp4 vacío");
+      saveBlob(blob, nameBase + ".mp4");
+      return true;
+    } catch (e) {
+      try { await enc.finish(); } catch (e2) {}
+      return false;
+    }
+  }
+
+  // Fallback MediaRecorder.
+  function recordMediaRecorder(v, canvas, ctx, color, W, H, nameBase) {
+    return new Promise((resolve, reject) => {
+      const cands = ["video/mp4;codecs=h264", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+      const mime = window.MediaRecorder && cands.find((t) => MediaRecorder.isTypeSupported(t));
+      if (!mime) { reject(new Error("MediaRecorder no soportado")); return; }
+      const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm";
+      const rec = new MediaRecorder(canvas.captureStream(60), { mimeType: mime, videoBitsPerSecond: 12000000 });
+      const chunks = [];
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      let guard = 0;
+      rec.onstop = () => {
+        clearTimeout(guard);
+        const blob = new Blob(chunks, { type: mime.split(";")[0] });
+        if (blob.size < 1000) { reject(new Error("grabación vacía")); return; }
+        saveBlob(blob, `${nameBase}.${ext}`);
+        resolve();
+      };
+      let raf = 0;
+      const draw = () => { ctx.fillStyle = color; ctx.fillRect(0, 0, W, H); try { ctx.drawImage(v, 0, 0, W, H); } catch (e) {} raf = requestAnimationFrame(draw); };
+      const finish = () => { if (rec.state !== "inactive") { cancelAnimationFrame(raf); rec.stop(); } };
+      v.onended = finish;
+      const startRec = () => { if (rec.state !== "inactive") return; guard = setTimeout(finish, ((v.duration || 16) + 3) * 1000); rec.start(); draw(); v.play().catch(reject); };
+      v.currentTime = 0;
+      if (v.readyState >= 3) startRec(); else { v.oncanplaythrough = startRec; setTimeout(startRec, 1200); }
+    });
   }
 
   function saveBlob(blob, name) {

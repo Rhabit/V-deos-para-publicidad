@@ -125,9 +125,10 @@
       y += heights[i] + gap;
     }
   }
+  function render(t) { drawWallpaper(); drawClock(); drawNotifs(t); }
+  let encoding = false;
   function frame(now) {
-    const t = ((now - start) / 1000) % CYCLE;
-    drawWallpaper(); drawClock(); drawNotifs(t);
+    if (!encoding) render(((now - start) / 1000) % CYCLE);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
@@ -191,7 +192,22 @@
     a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(u), 8000);
   }
-  window.__lockDownload = function () {
+  window.__lockDownload = async function () {
+    // 1) MP4 real con WebCodecs (renderiza un ciclo fotograma a fotograma).
+    if (window.mp4Support && window.mp4Support()) {
+      const enc = await window.makeMp4Encoder(W, H, 30, 12000000);
+      if (enc) {
+        try {
+          encoding = true;
+          const FPS = 30, total = Math.round(CYCLE * FPS);
+          for (let i = 0; i < total; i++) { render(i / FPS); await enc.addFrame(canvas, i * 1e6 / FPS, i % 60 === 0); }
+          const blob = await enc.finish();
+          encoding = false;
+          if (blob.size >= 1000) { saveBlob(blob, "rhabit-pantalla-bloqueo.mp4"); return; }
+        } catch (e) { encoding = false; }
+      }
+    }
+    // 2) Fallback: MediaRecorder (captura el canvas en vivo un ciclo).
     return new Promise((resolve, reject) => {
       const cands = ["video/mp4;codecs=h264", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
       const mime = window.MediaRecorder && cands.find((t) => MediaRecorder.isTypeSupported(t));
@@ -206,8 +222,7 @@
         saveBlob(blob, `rhabit-pantalla-bloqueo.${ext}`);
         resolve();
       };
-      restart();
-      rec.start();
+      restart(); rec.start();
       setTimeout(() => { if (rec.state !== "inactive") rec.stop(); }, CYCLE * 1000 + 120);
     });
   };
