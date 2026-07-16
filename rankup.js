@@ -1,35 +1,48 @@
-/* Clip "Registra cada serie · subida de rango":
-   ESCENA 1 = el clip real de la app (gym-<pose>[-en].webm), idéntico al resto.
-   ESCENA 2 = subida de rango (Silver I) épica en el mismo marco de móvil.
-   Se reproduce el vídeo real y, al terminar, encadena la animación de rango.
-   Descarga: MP4 (WebCodecs) uniendo vídeo + rango, o MediaRecorder del canvas. */
+/* Nuevo móvil: escena 1 = registro de series con el estilo de "Registra cada
+   serie" (dos tarjetas de ejercicio como la app original). Al completar la última
+   serie salta a la escena 2 = SUBIDA DE RANGO (Silver I) épica, todo dentro del
+   mismo marco de móvil, con la paleta cálida de la marca y soporte de vista
+   isométrica / plana (selector Pose). Canvas puro, editable, descarga MP4. */
 (function initRankUp() {
   const canvas = document.getElementById("rank-canvas");
   if (!canvas) return;
   const mainCtx = canvas.getContext("2d");
-  const W = 1080, H = 1920, RANK = 5.0, FPS = 30;
+  const W = 1080, H = 1920, CYCLE = 8.0;
   canvas.width = W; canvas.height = H;
   const FONT = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
+  // Offscreen: se pinta el móvil aquí y se vuelca plano o en perspectiva (iso).
   const pcv = document.createElement("canvas"); pcv.width = W; pcv.height = H;
   const pctx = pcv.getContext("2d");
-  let ctx = mainCtx;
+  let ctx = mainCtx; // las funciones de dibujo usan este contexto mutable
 
-  const C = { text: "#ffffff", sport: "#f5b14a", textDim: "#c2b8a8" };
+  const C = {
+    bg: "#090906", surface: "#17120F", surfaceAlt: "#221c17",
+    accent: "#ff7a1a", sport: "#f5b14a", text: "#ffffff",
+    textDim: "#c2b8a8", border: "#2c241d",
+  };
+
   const PX = 150, PY = 86, PW = 780, PH = 1748, PR = 96;
   const SX = PX + 16, SY = PY + 16, SW = PW - 32, SH = PH - 32, SR = PR - 16;
 
   const emblem = new Image(); emblem.src = "assets/rank-silver.png";
+  const thumbCurl = new Image(); thumbCurl.src = "assets/ex-curl.png";
+  const thumbBench = new Image(); thumbBench.src = "assets/ex-bench.png";
   const langNow = () => { const on = document.querySelector("#mk-lang button.on"); return on && on.dataset.lang === "en" ? "en" : "es"; };
   const poseNow = () => { const on = document.querySelector("#mk-pose button.on"); return on && on.dataset.pose === "flat" ? "flat" : "iso"; };
+
   const TX = {
-    es: { rankup: "SUBIDA DE RANGO", rank: "SILVER I", sub: "Sigue así. Imparable." },
-    en: { rankup: "RANK UP", rank: "SILVER I", sub: "Keep going. Unstoppable." },
+    es: { time: "TIEMPO", vol: "VOLUMEN", sets: "SERIES", muscles: "MÚSCULOS", colSet: "SERIE", colPrev: "ANTERIOR", addSet: "Añadir serie", rankup: "SUBIDA DE RANGO", rank: "SILVER I", sub: "Sigue así. Imparable.", ex1: "Curl de bíceps", ex2: "Press de banca" },
+    en: { time: "TIME", vol: "VOLUME", sets: "SETS", muscles: "MUSCLES", colSet: "SET", colPrev: "PREVIOUS", addSet: "Add set", rankup: "RANK UP", rank: "SILVER I", sub: "Keep going. Unstoppable.", ex1: "Biceps curl", ex2: "Bench press" },
   };
+  let weight = "55", reps = "8";
+  let start = performance.now();
+  const restart = () => { start = performance.now(); };
 
   const clamp01 = (k) => Math.max(0, Math.min(1, k));
   const easeOut = (k) => 1 - Math.pow(1 - k, 3);
   const easeOutBack = (k) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+
   function roundRect(x, y, w, h, r) {
     r = Math.min(r, w / 2, h / 2);
     ctx.beginPath();
@@ -41,26 +54,13 @@
   const SPARKS = [];
   for (let i = 0; i < 30; i++) SPARKS.push({ a: Math.random() * Math.PI * 2, sp: 0.5 + Math.random() * 0.7, ph: Math.random(), sz: 2 + Math.random() * 4 });
 
-  // ---------- Vídeo real (escena 1) ----------
-  const vid = document.createElement("video");
-  vid.muted = true; vid.playsInline = true; vid.loop = false; vid.preload = "auto";
-  vid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px";
-  document.body.appendChild(vid);
-  let vidDur = 6.2;
-  vid.addEventListener("loadedmetadata", () => { if (vid.duration) vidDur = vid.duration; });
-  const clipSrc = () => `assets/clips/gym-${poseNow()}${langNow() === "en" ? "-en" : ""}.webm`;
-  function loadClip(restart) {
-    const s = clipSrc();
-    if (!vid.src.endsWith(s)) { vid.src = s; vid.load(); }
-    if (restart) { try { vid.currentTime = 0; } catch (e) {} state = "workout"; vid.play().catch(() => {}); }
-  }
-
-  // ---------- Marco de móvil (escena 2) ----------
+  // ---------- Marco de móvil ----------
   function drawPhone(content) {
     roundRect(PX, PY, PW, PH, PR); ctx.fillStyle = "#0b0a09"; ctx.fill();
     ctx.lineWidth = 6; ctx.strokeStyle = "#2a2320"; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.stroke();
     ctx.save(); roundRect(SX, SY, SW, SH, SR); ctx.clip();
+    ctx.fillStyle = C.bg; ctx.fillRect(SX, SY, SW, SH);
     content();
     ctx.restore();
     const nw = 230, nh = 34;
@@ -70,7 +70,8 @@
     const y = SY + 70;
     ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `700 30px ${FONT}`;
     ctx.fillText("9:41", SX + 46, y);
-    let bx = SX + SW - 168; ctx.fillStyle = C.text;
+    let bx = SX + SW - 168;
+    ctx.fillStyle = C.text;
     for (let i = 0; i < 4; i++) { const bh = 8 + i * 7; ctx.fillRect(bx + i * 13, y - bh, 8, bh); }
     const btx = SX + SW - 100, bty = y - 22, bw = 56, bh = 26;
     ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255,255,255,0.6)";
@@ -78,15 +79,192 @@
     ctx.fillStyle = "rgba(255,255,255,0.6)"; roundRect(btx + bw + 2, bty + 8, 5, 10, 2); ctx.fill();
     ctx.fillStyle = C.text; roundRect(btx + 4, bty + 4, (bw - 8) * 0.7, bh - 8, 4); ctx.fill();
   }
+  function dumbbell(cx, cy, s, color) {
+    ctx.save(); ctx.strokeStyle = color; ctx.lineCap = "round";
+    ctx.lineWidth = s * 0.16; ctx.beginPath(); ctx.moveTo(cx - s * 0.5, cy); ctx.lineTo(cx + s * 0.5, cy); ctx.stroke();
+    ctx.lineWidth = s * 0.36;
+    ctx.beginPath(); ctx.moveTo(cx - s * 0.5, cy - s * 0.3); ctx.lineTo(cx - s * 0.5, cy + s * 0.3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + s * 0.5, cy - s * 0.3); ctx.lineTo(cx + s * 0.5, cy + s * 0.3); ctx.stroke();
+    ctx.restore();
+  }
+  function checkMark(cx, cy, s, color) {
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = s * 0.28; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath(); ctx.moveTo(cx - s * 0.42, cy + s * 0.02); ctx.lineTo(cx - s * 0.1, cy + s * 0.34); ctx.lineTo(cx + s * 0.46, cy - s * 0.36); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---------- Escena 1: registro de series (dos ejercicios) ----------
+  // Se anima UNA sola serie: primero el peso, luego las reps, luego se completa.
+  const KG_T0 = 0.5, KG_T1 = 1.15, RP_T0 = 1.45, RP_T1 = 2.0, PRESS_T = 2.2;
+  function typeNum(target, t, t0, t1) {
+    const tgt = parseInt(target) || 0;
+    if (t < t0) return "";
+    if (t >= t1 || !tgt) return String(target);
+    return String(Math.round(tgt * ((t - t0) / (t1 - t0))));
+  }
+  function drawCard(x, y, w, name, rows, t, thumb) {
+    const headH = 118, colH = 54, rowH = 92, pad = 22;
+    const cardH = headH + colH + rowH * rows.length + 74 + pad;
+    roundRect(x, y, w, cardH, 42);
+    ctx.fillStyle = C.surface; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+
+    const thumbR = 42, thumbX = x + 40 + thumbR, thumbY = y + 34 + thumbR;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.clip();
+    ctx.fillStyle = C.surfaceAlt; ctx.fillRect(thumbX - thumbR, thumbY - thumbR, thumbR * 2, thumbR * 2);
+    if (thumb && thumb.complete && thumb.naturalWidth) {
+      const iar = thumb.naturalWidth / thumb.naturalHeight, d = thumbR * 2;
+      let dw, dh; if (iar > 1) { dh = d; dw = d * iar; } else { dw = d; dh = d / iar; }
+      ctx.drawImage(thumb, thumbX - dw / 2, thumbY - dh / 2, dw, dh);
+    }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.4)"; ctx.stroke();
+    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `800 42px ${FONT}`;
+    ctx.fillText(name, thumbX + thumbR + 28, thumbY + 14);
+    ctx.textAlign = "center"; ctx.fillStyle = C.textDim; ctx.font = `800 38px ${FONT}`;
+    ctx.fillText("···", x + w - 56, thumbY - 6);
+
+    const L = TX[langNow()];
+    const inX = x + 20, inW = w - 40;
+    const cSet = inX + inW * 0.10, cPrev = inX + inW * 0.34, cKg = inX + inW * 0.56, cReps = inX + inW * 0.73, cChk = inX + inW * 0.90;
+    const colY = y + headH + 22;
+    ctx.fillStyle = C.textDim; ctx.font = `700 23px ${FONT}`; ctx.textAlign = "center";
+    spacedText(L.colSet, cSet, colY, 1); spacedText(L.colPrev, cPrev, colY, 1);
+    spacedText("KG", cKg, colY, 1); spacedText("REPS", cReps, colY, 1);
+
+    let ry = y + headH + colH;
+    rows.forEach((s, i) => {
+      const cy = ry + rowH / 2;
+      const doneAnim = s.active ? clamp01((t - PRESS_T) / 0.3) : 1;
+      const on = s.done;
+      if (on) {
+        ctx.globalAlpha = s.active ? doneAnim : 1;
+        roundRect(inX - 2, ry + 7, inW + 4, rowH - 14, 20);
+        const gg = ctx.createLinearGradient(0, ry, 0, ry + rowH);
+        gg.addColorStop(0, "rgba(255,122,26,0.16)"); gg.addColorStop(1, "rgba(255,122,26,0.05)");
+        ctx.fillStyle = gg; ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,122,26,0.30)"; ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.textAlign = "center"; ctx.font = `800 32px ${FONT}`;
+      ctx.fillStyle = on ? C.accent : C.textDim; ctx.fillText(String(i + 1), cSet, cy + 11);
+      ctx.fillStyle = C.textDim; ctx.font = `500 26px ${FONT}`; ctx.fillText(s.prev, cPrev, cy + 9);
+      let kgTxt = String(s.kg), repsTxt = String(s.reps), kgFocus = false, repsFocus = false;
+      if (s.active) {
+        kgTxt = typeNum(s.kg, t, KG_T0, KG_T1); repsTxt = typeNum(s.reps, t, RP_T0, RP_T1);
+        kgFocus = t >= KG_T0 && t < RP_T0; repsFocus = t >= RP_T0 && t < PRESS_T;
+      }
+      if (!on) {
+        roundRect(cKg - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
+        if (kgFocus) { ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.stroke(); }
+        roundRect(cReps - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
+        if (repsFocus) { ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.stroke(); }
+      }
+      ctx.fillStyle = on ? C.accent : C.text; ctx.font = `800 40px ${FONT}`; ctx.textAlign = "center";
+      ctx.fillText(kgTxt, cKg, cy + 13); ctx.fillText(repsTxt, cReps, cy + 13);
+      // Cursor parpadeante en la casilla que se está rellenando y aún vacía.
+      if ((kgFocus && !kgTxt) || (repsFocus && !repsTxt)) {
+        const bx = (kgFocus && !kgTxt) ? cKg : cReps;
+        if (Math.floor(t * 2) % 2 === 0) { ctx.fillStyle = C.accent; ctx.fillRect(bx - 2, cy - 20, 4, 40); }
+      }
+
+      const chS = 58, chX = cChk - chS / 2, chY = cy - chS / 2;
+      const pop = s.active ? 1 + 0.18 * Math.sin(clamp01((t - PRESS_T) / 0.18) * Math.PI) : 1;
+      ctx.save(); ctx.translate(cChk, cy); ctx.scale(pop, pop); ctx.translate(-cChk, -cy);
+      roundRect(chX, chY, chS, chS, 15);
+      if (on) {
+        const cg = ctx.createLinearGradient(chX, chY, chX, chY + chS);
+        cg.addColorStop(0, C.sport); cg.addColorStop(1, C.accent);
+        ctx.fillStyle = cg; ctx.globalAlpha = s.active ? doneAnim : 1; ctx.fill(); ctx.globalAlpha = 1;
+        checkMark(cChk, cy, chS * 0.7, "#1a0f06");
+      } else {
+        ctx.lineWidth = 3; ctx.strokeStyle = C.border; ctx.stroke();
+        checkMark(cChk, cy, chS * 0.62, "rgba(194,184,168,0.35)");
+      }
+      ctx.restore();
+
+      if (s.active && t >= RP_T1 && t < PRESS_T) {
+        const pulse = (Math.sin(t * 6) + 1) / 2;
+        ctx.globalAlpha = 0.35 + 0.35 * pulse;
+        ctx.beginPath(); ctx.arc(cChk, cy, chS * 0.6 + 12 * pulse, 0, 7);
+        ctx.lineWidth = 4; ctx.strokeStyle = C.accent; ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ry += rowH;
+    });
+
+    const asY = ry + 16, asH = 62;
+    ctx.save(); ctx.setLineDash([10, 8]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.4)";
+    roundRect(inX, asY, inW, asH, 16); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = C.accent; ctx.textAlign = "center"; ctx.font = `700 30px ${FONT}`;
+    ctx.fillText("+  " + L.addSet, inX + inW / 2, asY + asH / 2 + 11);
+    return cardH;
+  }
+
+  function drawWorkout(t) {
+    const L = TX[langNow()];
+    drawStatusBar();
+
+    const done3 = t >= PRESS_T;
+    const ex1Rows = [
+      { prev: "10×12", kg: "12", reps: "12", done: true },
+      { prev: "12×10", kg: "12", reps: "10", done: true },
+      { prev: "12×9", kg: "14", reps: "8", done: true },
+    ];
+    const ex2Rows = [
+      { prev: "50×10", kg: "50", reps: "10", done: true },
+      { prev: "50×10", kg: "50", reps: "9", done: true },
+      { prev: "52×8", kg: weight, reps: reps, done: done3, active: true },
+    ];
+    const allRows = ex1Rows.concat(ex2Rows);
+    const vol = allRows.filter((s) => s.done).reduce((a, s) => a + (parseFloat(s.kg) || 0) * (parseInt(s.reps) || 0), 0);
+    const nDone = allRows.filter((s) => s.done).length;
+
+    // Barra de stats
+    const sbY = SY + 156;
+    const cols = [
+      { label: L.time, value: "12:04", clock: true },
+      { label: L.vol, value: String(Math.round(vol)) },
+      { label: L.sets, value: String(nDone) },
+      { label: L.muscles, value: "2" },
+    ];
+    const gx0 = SX + 26, gw = SW - 52, cw = gw / cols.length;
+    ctx.textAlign = "center";
+    cols.forEach((c, i) => {
+      const cx = gx0 + cw * i + cw / 2;
+      if (c.clock) {
+        const tw = ctx.measureText(c.value).width;
+        ctx.strokeStyle = C.accent; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, sbY - 62, 14, 0, 7); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, sbY - 62); ctx.lineTo(cx, sbY - 71); ctx.moveTo(cx, sbY - 62); ctx.lineTo(cx + 8, sbY - 62); ctx.stroke();
+      }
+      ctx.fillStyle = C.text; ctx.font = `800 44px ${FONT}`; ctx.fillText(c.value, cx, sbY);
+      ctx.fillStyle = C.textDim; ctx.font = `600 23px ${FONT}`; spacedText(c.label, cx, sbY + 38, 1);
+      if (i < cols.length - 1) { ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx0 + cw * (i + 1), sbY - 34); ctx.lineTo(gx0 + cw * (i + 1), sbY + 28); ctx.stroke(); }
+    });
+    ctx.strokeStyle = C.border; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(SX, sbY + 84); ctx.lineTo(SX + SW, sbY + 84); ctx.stroke();
+
+    // Dos tarjetas de ejercicio
+    const cardX = SX + 24, cardW = SW - 48;
+    let y = sbY + 112;
+    y += drawCard(cardX, y, cardW, L.ex1, ex1Rows, t, thumbCurl) + 22;
+    drawCard(cardX, y, cardW, L.ex2, ex2Rows, t, thumbBench);
+  }
+
+  function drawFlash(a) { a = clamp01(a); if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#fff"; ctx.fillRect(SX, SY, SW, SH); ctx.restore(); }
+
+  // ---------- Escena 2: subida de rango ----------
   function drawRays(rt, cx, cy, alpha) {
     if (alpha <= 0.01) return;
+    const n = 16;
     ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = alpha;
     ctx.translate(cx, cy); ctx.rotate(rt * 0.22);
-    for (let i = 0; i < 16; i++) {
-      ctx.rotate((Math.PI * 2) / 16);
-      const g = ctx.createLinearGradient(0, 0, 0, -1400);
-      g.addColorStop(0, "rgba(255,205,140,0)"); g.addColorStop(0.04, "rgba(255,190,120,0.24)"); g.addColorStop(1, "rgba(255,190,120,0)");
-      ctx.fillStyle = g;
+    for (let i = 0; i < n; i++) {
+      ctx.rotate((Math.PI * 2) / n);
+      const grad = ctx.createLinearGradient(0, 0, 0, -1400);
+      grad.addColorStop(0, "rgba(255,205,140,0)"); grad.addColorStop(0.04, "rgba(255,190,120,0.24)"); grad.addColorStop(1, "rgba(255,190,120,0)");
+      ctx.fillStyle = grad;
       ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(30, 0); ctx.lineTo(130, -1400); ctx.lineTo(-130, -1400); ctx.closePath(); ctx.fill();
     }
     ctx.restore();
@@ -112,14 +290,18 @@
     rg.addColorStop(0, `rgba(255,150,60,${0.26 + 0.1 * pulse})`); rg.addColorStop(0.42, "rgba(180,90,30,0.14)"); rg.addColorStop(1, "rgba(10,7,5,0)");
     ctx.fillStyle = rg; ctx.fillRect(SX, SY, SW, SH);
 
-    const app = clamp01((rt - 0.15) / 0.9), emAlpha = clamp01((rt - 0.15) / 0.45);
+    const app = clamp01((rt - 0.15) / 0.9);
+    const emAlpha = clamp01((rt - 0.15) / 0.45);
     const sc = app <= 0 ? 0 : easeOutBack(app);
+
     drawRays(rt, cx, cy, 0.45 * emAlpha + 0.12 * pulse);
+
     if (emAlpha > 0) {
       const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, 440 * Math.max(0.3, sc));
       gr.addColorStop(0, `rgba(255,200,140,${0.5 * emAlpha})`); gr.addColorStop(0.5, `rgba(255,140,50,${0.22 * emAlpha})`); gr.addColorStop(1, "rgba(0,0,0,0)");
       ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = gr; ctx.fillRect(SX, SY, SW, SH); ctx.restore();
     }
+
     const landT = 0.9;
     if (rt > landT) {
       const k = (rt - landT) / 0.6;
@@ -129,6 +311,7 @@
         ctx.beginPath(); ctx.arc(cx, cy, 160 + k * 430, 0, 7); ctx.stroke(); ctx.restore();
       }
     }
+
     const ar = (emblem.naturalWidth && emblem.naturalHeight) ? emblem.naturalWidth / emblem.naturalHeight : 0.95;
     const ew = 480 * sc, eh = ew / ar;
     if (sc > 0.02 && emblem.complete && emblem.naturalWidth) {
@@ -148,6 +331,7 @@
       }
       ctx.save(); ctx.globalAlpha = emAlpha; ctx.drawImage(off, cx - ew / 2, cy - eh / 2, ew, eh); ctx.restore();
     }
+
     drawSparks(rt, cx, cy, emAlpha);
 
     const tTop = clamp01((rt - 0.7) / 0.5);
@@ -156,7 +340,8 @@
       const ty = SY + SH * 0.11 + (1 - easeOut(tTop)) * 34;
       ctx.font = `800 54px ${FONT}`; ctx.fillStyle = C.sport;
       ctx.shadowColor = "rgba(255,140,40,0.85)"; ctx.shadowBlur = 30;
-      spacedText(L.rankup, W / 2, ty, 8); ctx.restore();
+      spacedText(L.rankup, W / 2, ty, 8);
+      ctx.restore();
     }
     const tRank = clamp01((rt - 1.15) / 0.5);
     if (tRank > 0) {
@@ -167,114 +352,94 @@
       const mg = ctx.createLinearGradient(0, -100, 0, 40);
       mg.addColorStop(0, "#ffffff"); mg.addColorStop(0.42, "#dcdfe8"); mg.addColorStop(0.5, "#9aa0b4"); mg.addColorStop(0.58, "#c9cedd"); mg.addColorStop(1, "#7b8296");
       ctx.fillStyle = mg; ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = 20; ctx.shadowOffsetY = 6;
-      spacedText(L.rank, 0, 0, 7); ctx.restore();
+      spacedText(L.rank, 0, 0, 7);
+      ctx.restore();
     }
     const tSub = clamp01((rt - 1.6) / 0.6);
     if (tSub > 0) {
       ctx.save(); ctx.globalAlpha = tSub; ctx.textAlign = "center";
       ctx.fillStyle = C.textDim; ctx.font = `600 36px ${FONT}`;
-      ctx.fillText(L.sub, W / 2, SY + SH * 0.77); ctx.restore();
+      ctx.fillText(L.sub, W / 2, SY + SH * 0.77);
+      ctx.restore();
     }
-    drawStatusBar();
   }
-  // Inclinación del clip real (medida): lean suave, casi rectangular.
+
+  // ---------- Vuelco: plano o isométrico ----------
+  // Inclinación medida del clip real "Registra cada serie": lean suave (cizalla
+  // horizontal ~-0.042, top hacia la derecha) + ligera reducción, casi rectangular.
   function blitIso(src) {
     const cx = W / 2, cy = H / 2;
-    ctx.save(); ctx.translate(cx, cy); ctx.transform(0.97, 0, -0.042, 0.95, 0, 0); ctx.translate(-cx, -cy);
-    ctx.drawImage(src, 6, 0); ctx.restore();
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.transform(0.97, 0, -0.042, 0.95, 0, 0);
+    ctx.translate(-cx, -cy);
+    ctx.drawImage(src, 6, 0);
+    ctx.restore();
   }
-  // Dibuja la escena 2 (rango) en el canvas principal, con pose y flash inicial.
-  function renderRank(rt) {
-    ctx = pctx; pctx.clearRect(0, 0, W, H);
-    drawPhone(() => { drawRankUp(rt); });
+  function render(t) {
+    const flashStart = 2.85, rankStart = 3.02;
+    ctx = pctx;
+    pctx.clearRect(0, 0, W, H);
+    drawPhone(() => {
+      if (t < flashStart) { drawWorkout(t); }
+      else if (t < rankStart) { drawWorkout(flashStart); drawFlash((t - flashStart) / (rankStart - flashStart)); }
+      else { const rt = t - rankStart; drawRankUp(rt); if (rt < 0.3) drawFlash(1 - rt / 0.3); }
+    });
     ctx = mainCtx;
-    mainCtx.fillStyle = "#000"; mainCtx.fillRect(0, 0, W, H);
+    mainCtx.clearRect(0, 0, W, H);
     if (poseNow() === "iso") blitIso(pcv); else mainCtx.drawImage(pcv, 0, 0);
-    if (rt < 0.28) { mainCtx.save(); mainCtx.globalAlpha = 1 - rt / 0.28; mainCtx.fillStyle = "#fff"; mainCtx.fillRect(0, 0, W, H); mainCtx.restore(); }
-  }
-  function drawVideoFrame() {
-    mainCtx.fillStyle = "#000"; mainCtx.fillRect(0, 0, W, H);
-    if (vid.readyState >= 2) { try { mainCtx.drawImage(vid, 0, 0, W, H); } catch (e) {} }
   }
 
-  // ---------- Bucle de vista previa ----------
-  let state = "workout", rankStart = 0, encoding = false;
-  loadClip(true);
-  function tick(now) {
-    if (!encoding) {
-      if (state === "workout") {
-        drawVideoFrame();
-        if (vid.ended || (vid.duration && vid.currentTime >= vid.duration - 0.05)) { state = "rank"; rankStart = now; }
-      } else {
-        const rt = (now - rankStart) / 1000;
-        renderRank(rt);
-        if (rt >= RANK) { state = "workout"; try { vid.currentTime = 0; } catch (e) {} vid.play().catch(() => {}); }
-      }
-    }
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
+  let encoding = false;
+  function frame(now) { if (!encoding) render(((now - start) / 1000) % CYCLE); requestAnimationFrame(frame); }
+  requestAnimationFrame(frame);
 
-  const poseSeg = document.getElementById("mk-pose"), langSeg = document.getElementById("mk-lang");
-  if (poseSeg) poseSeg.addEventListener("click", () => setTimeout(() => loadClip(true), 0));
-  if (langSeg) langSeg.addEventListener("click", () => setTimeout(() => loadClip(true), 0));
+  // ---------- Controles ----------
+  const wI = document.getElementById("rank-weight"), rI = document.getElementById("rank-reps");
+  if (wI) wI.addEventListener("input", () => { weight = (wI.value || "0").slice(0, 4); restart(); });
+  if (rI) rI.addEventListener("input", () => { reps = (rI.value || "0").slice(0, 4); restart(); });
+  const langSeg = document.getElementById("mk-lang");
+  if (langSeg) langSeg.addEventListener("click", () => setTimeout(restart, 0));
 
-  // ---------- Descarga: vídeo + rango en un MP4 ----------
+  // ---------- Descarga ----------
   function saveBlob(blob, name) {
     const u = URL.createObjectURL(blob); const a = document.createElement("a");
     a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(u), 8000);
   }
-  function waitImg(img) { return (img.complete && img.naturalWidth) ? Promise.resolve() : new Promise((r) => { img.onload = r; img.onerror = r; setTimeout(r, 3000); }); }
-  function ensureVid() {
-    return new Promise((res) => {
-      if (vid.readyState >= 2 && vid.duration) return res();
-      const on = () => { if (vid.readyState >= 2 && vid.duration) { cleanup(); res(); } };
-      const cleanup = () => { vid.removeEventListener("loadeddata", on); vid.removeEventListener("canplay", on); };
-      vid.addEventListener("loadeddata", on); vid.addEventListener("canplay", on); setTimeout(() => { cleanup(); res(); }, 6000);
-    });
-  }
-  function seekTo(t) {
-    return new Promise((res) => {
-      const done = () => { vid.removeEventListener("seeked", done); res(); };
-      vid.addEventListener("seeked", done); try { vid.currentTime = Math.min(t, (vid.duration || t) - 0.001); } catch (e) { res(); }
-      setTimeout(res, 400);
-    });
+  function waitImg(img) {
+    if (img.complete && img.naturalWidth) return Promise.resolve();
+    return new Promise((res) => { img.onload = res; img.onerror = res; setTimeout(res, 3000); });
   }
   window.__rankupDownload = async function () {
-    loadClip(false); await Promise.all([waitImg(emblem), ensureVid()]);
-    const D = vid.duration || vidDur, name = "rhabit-registro-subida-rango";
+    await Promise.all([emblem, thumbCurl, thumbBench].map(waitImg));
     if (window.mp4Support && window.mp4Support()) {
-      const enc = await window.makeMp4Encoder(W, H, FPS, 12000000);
+      const enc = await window.makeMp4Encoder(W, H, 30, 12000000);
       if (enc) {
         try {
-          encoding = true; vid.pause();
-          const n1 = Math.round(D * FPS);
-          for (let i = 0; i < n1; i++) { await seekTo(i / FPS); drawVideoFrame(); await enc.addFrame(canvas, i * 1e6 / FPS, i % 60 === 0); }
-          const n2 = Math.round(RANK * FPS);
-          for (let j = 0; j < n2; j++) { renderRank(j / FPS); await enc.addFrame(canvas, (n1 + j) * 1e6 / FPS, (n1 + j) % 60 === 0); }
-          const blob = await enc.finish(); encoding = false; state = "workout"; loadClip(true);
-          if (blob.size >= 1000) { saveBlob(blob, name + ".mp4"); return; }
-        } catch (e) { encoding = false; state = "workout"; loadClip(true); }
+          encoding = true;
+          const FPS = 30, total = Math.round(CYCLE * FPS);
+          for (let i = 0; i < total; i++) { render(i / FPS); await enc.addFrame(canvas, i * 1e6 / FPS, i % 60 === 0); }
+          const blob = await enc.finish(); encoding = false;
+          if (blob.size >= 1000) { saveBlob(blob, "rhabit-subida-rango.mp4"); return; }
+        } catch (e) { encoding = false; }
       }
     }
-    // Fallback: graba el canvas en vivo un ciclo completo (vídeo + rango).
     return new Promise((resolve, reject) => {
       const cands = ["video/mp4;codecs=avc1.640028", "video/mp4;codecs=avc1", "video/mp4;codecs=h264", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
       const mime = window.MediaRecorder && cands.find((t) => MediaRecorder.isTypeSupported(t));
       if (!mime) { reject(new Error("MediaRecorder no soportado")); return; }
       const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm";
-      const rec = new MediaRecorder(canvas.captureStream(FPS), { mimeType: mime, videoBitsPerSecond: 12000000 });
+      const rec = new MediaRecorder(canvas.captureStream(30), { mimeType: mime, videoBitsPerSecond: 12000000 });
       const chunks = [];
       rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
       rec.onstop = () => {
         const blob = new Blob(chunks, { type: mime.split(";")[0] });
         if (blob.size < 1000) { reject(new Error("grabación vacía")); return; }
-        saveBlob(blob, `${name}.${ext}`); resolve();
+        saveBlob(blob, `rhabit-subida-rango.${ext}`); resolve();
       };
-      encoding = false; state = "workout"; try { vid.currentTime = 0; } catch (e) {} vid.play().catch(() => {});
-      rec.start();
-      setTimeout(() => { if (rec.state !== "inactive") rec.stop(); }, (D + RANK) * 1000 + 500);
+      restart(); rec.start();
+      setTimeout(() => { if (rec.state !== "inactive") rec.stop(); }, CYCLE * 1000 + 120);
     });
   };
 })();
