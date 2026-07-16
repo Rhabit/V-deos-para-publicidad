@@ -93,9 +93,10 @@
     ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.stroke();
     const ic = 76 * fs, ix = x + 28 * fs, iy = y + 28 * fs;
     roundRect(ix, iy, ic, ic, 20 * fs);
-    if (n.icon && n.icon.complete && n.icon.naturalWidth) {
+    const iconImg = (n.icon && n.icon.complete && n.icon.naturalWidth) ? n.icon : rhabitIcon;
+    if (iconImg.complete && iconImg.naturalWidth) {
       ctx.save(); ctx.clip();
-      const img = n.icon, ar = img.naturalWidth / img.naturalHeight;
+      const img = iconImg, ar = img.naturalWidth / img.naturalHeight;
       let dw, dh, dx, dy;
       if (ar > 1) { dh = ic; dw = ic * ar; dx = ix - (dw - ic) / 2; dy = iy; }
       else { dw = ic; dh = ic / ar; dx = ix; dy = iy - (dh - ic) / 2; }
@@ -157,10 +158,10 @@
     listEl.innerHTML = "";
     notifs.forEach((n, i) => {
       const row = document.createElement("div"); row.className = "lock-row";
-      const iconBg = n.iconSrc ? ` style="background-image:url('${esc(n.iconSrc)}')"` : "";
+      const src = n.iconSrc || "assets/rhabit-icon.png";
       row.innerHTML =
         `<label class="lock-ico" title="${langNow() === "en" ? "App icon" : "Icono de la app"}"><input type="file" accept="image/*" hidden>` +
-        `<span class="lock-ico__img"${iconBg}>${n.iconSrc ? "" : `<svg class="ico"><use href="#i-image"/></svg>`}</span></label>` +
+        `<span class="lock-ico__img" style="background-image:url('${esc(src)}')"></span></label>` +
         `<input class="lock-app" placeholder="App" value="${esc(n.app)}">` +
         `<input class="lock-text" placeholder="${langNow() === "en" ? "Notification text" : "Texto de la notificación"}" value="${esc(n.text)}">` +
         `<button class="lock-del" type="button" aria-label="Quitar"><svg class="ico"><use href="#i-trash"/></svg></button>`;
