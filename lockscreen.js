@@ -79,18 +79,20 @@
     ctx.fillStyle = "#fff"; ctx.font = `600 340px ${FONT}`;
     ctx.fillText(time, W / 2, 580);
   }
-  function notifHeight(n) {
-    ctx.font = `500 36px ${FONT}`;
-    const tx = 28 + 76 + 24;
-    const lines = wrapLines(n.text, (W - 2 * 48) - tx - 36);
-    return Math.max(128, 62 + lines.length * 46 + 30);
+  function notifHeight(n, fs) {
+    fs = fs || 1;
+    ctx.font = `500 ${36 * fs}px ${FONT}`;
+    const tx = 28 * fs + 76 * fs + 24 * fs;
+    const lines = wrapLines(n.text, (W - 2 * 48) - tx - 36 * fs);
+    return Math.max(128 * fs, 62 * fs + lines.length * 46 * fs + 30 * fs);
   }
-  function drawNotif(x, y, w, h, n, op) {
+  function drawNotif(x, y, w, h, n, op, fs) {
+    fs = fs || 1;
     ctx.save(); ctx.globalAlpha = op;
-    roundRect(x, y, w, h, 38); ctx.fillStyle = "rgba(30,30,34,0.62)"; ctx.fill();
+    roundRect(x, y, w, h, 38 * fs); ctx.fillStyle = "rgba(30,30,34,0.62)"; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.10)"; ctx.stroke();
-    const ic = 76, ix = x + 28, iy = y + 28;
-    roundRect(ix, iy, ic, ic, 20);
+    const ic = 76 * fs, ix = x + 28 * fs, iy = y + 28 * fs;
+    roundRect(ix, iy, ic, ic, 20 * fs);
     if (n.icon && n.icon.complete && n.icon.naturalWidth) {
       ctx.save(); ctx.clip();
       const img = n.icon, ar = img.naturalWidth / img.naturalHeight;
@@ -101,36 +103,41 @@
       ctx.restore();
     } else {
       ctx.fillStyle = n.color || "#ff7a1a"; ctx.fill();
-      ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = `800 42px ${FONT}`;
-      ctx.fillText(((n.app || "R").trim().charAt(0) || "R").toUpperCase(), ix + ic / 2, iy + ic / 2 + 15);
+      ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = `800 ${42 * fs}px ${FONT}`;
+      ctx.fillText(((n.app || "R").trim().charAt(0) || "R").toUpperCase(), ix + ic / 2, iy + ic / 2 + 15 * fs);
     }
-    const tx = ix + ic + 24;
-    ctx.textAlign = "left"; ctx.fillStyle = "rgba(235,235,240,0.72)"; ctx.font = `700 27px ${FONT}`;
-    ctx.fillText((n.app || "Rhabit").toUpperCase(), tx, y + 50);
-    ctx.textAlign = "right"; ctx.fillStyle = "rgba(235,235,240,0.5)"; ctx.font = `500 27px ${FONT}`;
-    ctx.fillText(NOW[langNow()], x + w - 30, y + 50);
-    ctx.textAlign = "left"; ctx.fillStyle = "#fff"; ctx.font = `500 36px ${FONT}`;
-    wrapLines(n.text, w - (tx - x) - 36).forEach((ln, i) => ctx.fillText(ln, tx, y + 98 + i * 46));
+    const tx = ix + ic + 24 * fs;
+    ctx.textAlign = "left"; ctx.fillStyle = "rgba(235,235,240,0.72)"; ctx.font = `700 ${27 * fs}px ${FONT}`;
+    ctx.fillText((n.app || "Rhabit").toUpperCase(), tx, y + 50 * fs);
+    ctx.textAlign = "right"; ctx.fillStyle = "rgba(235,235,240,0.5)"; ctx.font = `500 ${27 * fs}px ${FONT}`;
+    ctx.fillText(NOW[langNow()], x + w - 30 * fs, y + 50 * fs);
+    ctx.textAlign = "left"; ctx.fillStyle = "#fff"; ctx.font = `500 ${36 * fs}px ${FONT}`;
+    wrapLines(n.text, w - (tx - x) - 36 * fs).forEach((ln, i) => ctx.fillText(ln, tx, y + 98 * fs + i * 46 * fs));
     ctx.restore();
   }
   function drawNotifs(t) {
-    const x = 48, w = W - 2 * 48, gap = 26, heights = notifs.map(notifHeight);
-    const startY = 1030, bottomMargin = 70;
-    const total = heights.reduce((a, b) => a + b, 0) + gap * (heights.length - 1);
-    const avail = H - bottomMargin - startY;
-    const s = total > avail ? avail / total : 1;
-    ctx.save();
-    ctx.translate(x, startY); ctx.scale(s, s);
-    let y = 0;
+    const x = 48, w = W - 2 * 48, gap = 26;
+    const bottomMargin = 70, baseStartY = 1030, minStartY = 720;
+    const availAtMin = H - bottomMargin - minStartY;
+    let fs = 1, heights, total;
+    const measure = () => {
+      heights = notifs.map((n) => notifHeight(n, fs));
+      total = heights.reduce((a, b) => a + b, 0) + gap * fs * (heights.length - 1);
+    };
+    measure();
+    // Ancho siempre completo: cuando no cabe, se sube y, si sigue sin caber, se reduce la letra.
+    let guard = 0;
+    while (total > availAtMin && fs > 0.55 && guard++ < 14) { fs *= Math.max(0.9, availAtMin / total); measure(); }
+    const startY = Math.min(baseStartY, Math.max(minStartY, H - bottomMargin - total));
+    let y = startY;
     for (let i = 0; i < notifs.length; i++) {
       const appearAt = 0.35 + i * 0.30, fadeOut = CYCLE - 0.7;
       let op = 0, slide = 0;
       if (t >= appearAt) { const k = Math.min(1, (t - appearAt) / 0.5); op = k; slide = (1 - ease(k)) * 70; }
       if (t >= fadeOut) op *= Math.max(0, 1 - (t - fadeOut) / 0.6);
-      if (op > 0.002) drawNotif(0, y - slide, w, heights[i], notifs[i], op);
-      y += heights[i] + gap;
+      if (op > 0.002) drawNotif(x, y - slide, w, heights[i], notifs[i], op, fs);
+      y += heights[i] + gap * fs;
     }
-    ctx.restore();
   }
   function render(t) { drawWallpaper(); drawClock(); drawNotifs(t); }
   let encoding = false;
