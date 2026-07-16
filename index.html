@@ -72,6 +72,23 @@
       </div>
     </article>
 
+    <article class="clip clip--lock" data-base="rankup" data-name="rhabit-subida-rango">
+      <div class="clip__video">
+        <canvas id="rank-canvas" class="lock-canvas"></canvas>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-dumbbell"/></svg> Entrenos</span>
+        <h2>Subida de rango épica</h2>
+        <div class="lock-ctrl">
+          <div class="lock-row">
+            <input class="lock-app" id="rank-weight" type="text" inputmode="numeric" placeholder="Peso" value="60">
+            <input class="lock-text" id="rank-reps" type="text" inputmode="numeric" placeholder="Repeticiones" value="10">
+          </div>
+        </div>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
     <article class="clip" data-base="exercise" data-name="rhabit-entreno-guiado">
       <div class="clip__video">
         <video autoplay loop muted playsinline preload="auto"></video>
@@ -154,5 +171,6 @@
   <script src="mp4enc.js"></script>
   <script src="marketing.js"></script>
   <script src="lockscreen.js"></script>
+  <script src="rankup.js"></script>
 </body>
 </html>
