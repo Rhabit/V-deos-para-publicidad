@@ -187,6 +187,22 @@
     document.getElementById("stage").classList.add(pose);
     const holder = document.querySelector(`.phone-holder[data-phone="${which}"]`);
     if (holder) holder.classList.add("on");
+    // Traduce el texto FIJO del HTML de los mockups i18n (calendar/swipe/gym) en EN
+    // (lo generado por JS ya lo traduce i18n; esto cubre lo estático del markup).
+    if (params.get("lang") === "en") {
+      const setT = (sel, t) => { const e = document.querySelector(sel); if (e) e.textContent = t; };
+      ["M", "T", "W", "T", "F", "S", "S"].forEach((d, i) => setT(`#cal-screen .cal-weekdays span:not(.cal-wk):nth-of-type(${i + 2})`, d));
+      setT("#cal-screen .cal-filter span:not(.cal-dot)", "All habits");
+      setT("#swipe-screen .sw-kicker", "Review habits");
+      setT("#swipe-screen .sw-title", "Habit swipe");
+      const gl = ["Time", "Volume", "Sets", "Muscles"];
+      document.querySelectorAll("#gym-screen .gym-stat").forEach((el, i) => {
+        const sp = el.querySelectorAll(":scope > span"); const l = sp[sp.length - 1];
+        if (l && gl[i]) l.textContent = gl[i];
+      });
+      setT("#gym-screen .exmodal__setstitle", "Today's sets");
+      setT("#muscmodal .exmodal__name", "Muscles worked");
+    }
     // Reinicia la animación en bucle para grabar ciclos limpios.
     const ID = { calendar: "cal-screen", swipe: "swipe-screen", gym: "gym-screen", filter: "filter-screen", swipe2: "swad-screen" }[which];
     window.__mkReplayLoop = (periodMs) => {
