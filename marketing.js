@@ -212,7 +212,7 @@
   // Fallback MediaRecorder.
   function recordMediaRecorder(v, canvas, ctx, color, W, H, nameBase) {
     return new Promise((resolve, reject) => {
-      const cands = ["video/mp4;codecs=h264", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+      const cands = ["video/mp4;codecs=avc1.640028", "video/mp4;codecs=avc1", "video/mp4;codecs=h264", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
       const mime = window.MediaRecorder && cands.find((t) => MediaRecorder.isTypeSupported(t));
       if (!mime) { reject(new Error("MediaRecorder no soportado")); return; }
       const ext = mime.indexOf("mp4") >= 0 ? "mp4" : "webm";
