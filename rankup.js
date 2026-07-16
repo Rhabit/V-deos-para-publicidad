@@ -1,37 +1,39 @@
-/* Nuevo móvil: escena 1 = registro de serie con el estilo de la app original
-   (ActiveWorkout: barra de stats, tarjeta de ejercicio, filas de series naranjas
-   con check). Al completar la última serie salta a la escena 2 = SUBIDA DE RANGO
-   (Silver I) épica, todo dentro del mismo marco de móvil y con la paleta cálida
-   de la marca. Canvas puro, editable en vivo, descarga MP4/MediaRecorder. */
+/* Nuevo móvil: escena 1 = registro de series con el estilo de "Registra cada
+   serie" (dos tarjetas de ejercicio como la app original). Al completar la última
+   serie salta a la escena 2 = SUBIDA DE RANGO (Silver I) épica, todo dentro del
+   mismo marco de móvil, con la paleta cálida de la marca y soporte de vista
+   isométrica / plana (selector Pose). Canvas puro, editable, descarga MP4. */
 (function initRankUp() {
   const canvas = document.getElementById("rank-canvas");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
+  const mainCtx = canvas.getContext("2d");
   const W = 1080, H = 1920, CYCLE = 8.0;
   canvas.width = W; canvas.height = H;
   const FONT = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
-  // Paleta de la app (src/theme.ts)
+  // Offscreen: se pinta el móvil aquí y se vuelca plano o en perspectiva (iso).
+  const pcv = document.createElement("canvas"); pcv.width = W; pcv.height = H;
+  const pctx = pcv.getContext("2d");
+  let ctx = mainCtx; // las funciones de dibujo usan este contexto mutable
+
   const C = {
     bg: "#090906", surface: "#17120F", surfaceAlt: "#221c17",
     accent: "#ff7a1a", sport: "#f5b14a", text: "#ffffff",
     textDim: "#c2b8a8", border: "#2c241d",
   };
 
-  // Marco de móvil
   const PX = 150, PY = 86, PW = 780, PH = 1748, PR = 96;
   const SX = PX + 16, SY = PY + 16, SW = PW - 32, SH = PH - 32, SR = PR - 16;
 
   const emblem = new Image(); emblem.src = "assets/rank-silver.png";
-  const langNow = () => {
-    const on = document.querySelector("#mk-lang button.on");
-    return on && on.dataset.lang === "en" ? "en" : "es";
-  };
+  const langNow = () => { const on = document.querySelector("#mk-lang button.on"); return on && on.dataset.lang === "en" ? "en" : "es"; };
+  const poseNow = () => { const on = document.querySelector("#mk-pose button.on"); return on && on.dataset.pose === "flat" ? "flat" : "iso"; };
+
   const TX = {
-    es: { exercise: "Press de banca", time: "TIEMPO", vol: "VOLUMEN", sets: "SERIES", muscles: "MÚSCULOS", colSet: "SERIE", colPrev: "ANTERIOR", addSet: "Añadir serie", rankup: "SUBIDA DE RANGO", rank: "SILVER I", sub: "Sigue así. Imparable." },
-    en: { exercise: "Bench press", time: "TIME", vol: "VOLUME", sets: "SETS", muscles: "MUSCLES", colSet: "SET", colPrev: "PREVIOUS", addSet: "Add set", rankup: "RANK UP", rank: "SILVER I", sub: "Keep going. Unstoppable." },
+    es: { time: "TIEMPO", vol: "VOLUMEN", sets: "SERIES", muscles: "MÚSCULOS", colSet: "SERIE", colPrev: "ANTERIOR", addSet: "Añadir serie", rankup: "SUBIDA DE RANGO", rank: "SILVER I", sub: "Sigue así. Imparable.", ex1: "Curl de bíceps", ex2: "Press de banca" },
+    en: { time: "TIME", vol: "VOLUME", sets: "SETS", muscles: "MUSCLES", colSet: "SET", colPrev: "PREVIOUS", addSet: "Add set", rankup: "RANK UP", rank: "SILVER I", sub: "Keep going. Unstoppable.", ex1: "Biceps curl", ex2: "Bench press" },
   };
-  let weight = "62", reps = "8";
+  let weight = "55", reps = "8";
   let start = performance.now();
   const restart = () => { start = performance.now(); };
 
@@ -52,11 +54,11 @@
 
   // ---------- Marco de móvil ----------
   function drawPhone(content) {
-    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
     roundRect(PX, PY, PW, PH, PR); ctx.fillStyle = "#0b0a09"; ctx.fill();
     ctx.lineWidth = 6; ctx.strokeStyle = "#2a2320"; ctx.stroke();
     ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.stroke();
     ctx.save(); roundRect(SX, SY, SW, SH, SR); ctx.clip();
+    ctx.fillStyle = C.bg; ctx.fillRect(SX, SY, SW, SH);
     content();
     ctx.restore();
     const nw = 230, nh = 34;
@@ -66,11 +68,9 @@
     const y = SY + 70;
     ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `700 30px ${FONT}`;
     ctx.fillText("9:41", SX + 46, y);
-    // señal
-    let bx = SX + SW - 168, by = y;
+    let bx = SX + SW - 168;
     ctx.fillStyle = C.text;
-    for (let i = 0; i < 4; i++) { const bh = 8 + i * 7; ctx.fillRect(bx + i * 13, by - bh, 8, bh); }
-    // batería
+    for (let i = 0; i < 4; i++) { const bh = 8 + i * 7; ctx.fillRect(bx + i * 13, y - bh, 8, bh); }
     const btx = SX + SW - 100, bty = y - 22, bw = 56, bh = 26;
     ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255,255,255,0.6)";
     roundRect(btx, bty, bw, bh, 7); ctx.stroke();
@@ -91,132 +91,142 @@
     ctx.restore();
   }
 
-  // ---------- Escena 1: registro de serie ----------
-  function drawWorkout(t) {
-    const L = TX[langNow()];
-    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
-    drawStatusBar();
-
-    const pressT = 2.0, done3 = t >= pressT;
-    const sets = [
-      { n: 1, prev: "60×10", kg: "60", reps: "10", done: true },
-      { n: 2, prev: "60×9", kg: "60", reps: "9", done: true },
-      { n: 3, prev: "62×8", kg: weight, reps: reps, done: done3 },
-    ];
-    const vol = sets.filter((s) => s.done).reduce((a, s) => a + (parseFloat(s.kg) || 0) * (parseInt(s.reps) || 0), 0);
-    const nDone = sets.filter((s) => s.done).length;
-
-    // Barra de stats
-    const sbY = SY + 150;
-    const cols = [
-      { label: L.time, value: "12:04" },
-      { label: L.vol, value: String(Math.round(vol)) },
-      { label: L.sets, value: String(nDone) },
-      { label: L.muscles, value: "2" },
-    ];
-    const gx0 = SX + 30, gw = SW - 60, cw = gw / cols.length;
-    ctx.textAlign = "center";
-    cols.forEach((c, i) => {
-      const cx = gx0 + cw * i + cw / 2;
-      ctx.fillStyle = C.text; ctx.font = `800 46px ${FONT}`; ctx.fillText(c.value, cx, sbY);
-      ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spacedText(c.label, cx, sbY + 40, 1);
-      if (i < cols.length - 1) { ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx0 + cw * (i + 1), sbY - 34); ctx.lineTo(gx0 + cw * (i + 1), sbY + 30); ctx.stroke(); }
-    });
-    ctx.strokeStyle = C.border; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(SX, sbY + 90); ctx.lineTo(SX + SW, sbY + 90); ctx.stroke();
-
-    // Tarjeta de ejercicio
-    const cardX = SX + 26, cardW = SW - 52, cardY = sbY + 128;
-    const rowH = 118, headH = 130, colH = 64;
-    const cardH = headH + colH + rowH * 3 + 96;
-    roundRect(cardX, cardY, cardW, cardH, 34);
+  // ---------- Escena 1: registro de series (dos ejercicios) ----------
+  const PRESS_T = 2.0;
+  function drawCard(x, y, w, name, rows, t) {
+    const headH = 118, colH = 54, rowH = 92, pad = 22;
+    const cardH = headH + colH + rowH * rows.length + 74 + pad;
+    roundRect(x, y, w, cardH, 32);
     ctx.fillStyle = "rgba(255,255,255,0.025)"; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
 
-    // Cabecera: thumb + nombre + ...
-    const thumbR = 44, thumbX = cardX + 44 + thumbR, thumbY = cardY + 40 + thumbR;
+    const thumbR = 40, thumbX = x + 40 + thumbR, thumbY = y + 36 + thumbR;
     ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.fillStyle = "rgba(255,122,26,0.08)"; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.45)"; ctx.stroke();
-    dumbbell(thumbX, thumbY, 46, C.accent);
-    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `800 44px ${FONT}`;
-    ctx.fillText(L.exercise, thumbX + thumbR + 30, thumbY + 15);
-    ctx.textAlign = "center"; ctx.fillStyle = C.textDim; ctx.font = `800 40px ${FONT}`;
-    ctx.fillText("···", cardX + cardW - 60, thumbY - 6);
+    dumbbell(thumbX, thumbY, 42, C.accent);
+    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `800 42px ${FONT}`;
+    ctx.fillText(name, thumbX + thumbR + 28, thumbY + 14);
+    ctx.textAlign = "center"; ctx.fillStyle = C.textDim; ctx.font = `800 38px ${FONT}`;
+    ctx.fillText("···", x + w - 56, thumbY - 6);
 
-    // Cabecera de columnas
-    const inX = cardX + 20, inW = cardW - 40;
-    const colSet = inX + inW * 0.10, colPrev = inX + inW * 0.34, colKg = inX + inW * 0.56, colReps = inX + inW * 0.73, colChk = inX + inW * 0.90;
-    const colY = cardY + headH + 26;
-    ctx.fillStyle = C.textDim; ctx.font = `700 24px ${FONT}`; ctx.textAlign = "center";
-    spacedText(L.colSet, colSet, colY, 1); spacedText(L.colPrev, colPrev, colY, 1);
-    spacedText("KG", colKg, colY, 1); spacedText("REPS", colReps, colY, 1);
+    const L = TX[langNow()];
+    const inX = x + 20, inW = w - 40;
+    const cSet = inX + inW * 0.10, cPrev = inX + inW * 0.34, cKg = inX + inW * 0.56, cReps = inX + inW * 0.73, cChk = inX + inW * 0.90;
+    const colY = y + headH + 22;
+    ctx.fillStyle = C.textDim; ctx.font = `700 23px ${FONT}`; ctx.textAlign = "center";
+    spacedText(L.colSet, cSet, colY, 1); spacedText(L.colPrev, cPrev, colY, 1);
+    spacedText("KG", cKg, colY, 1); spacedText("REPS", cReps, colY, 1);
 
-    // Filas de series
-    let ry = cardY + headH + colH;
-    sets.forEach((s) => {
+    let ry = y + headH + colH;
+    rows.forEach((s, i) => {
       const cy = ry + rowH / 2;
-      const isCurr = s.n === 3;
-      const doneAnim = isCurr ? clamp01((t - pressT) / 0.3) : 1;
+      const doneAnim = s.active ? clamp01((t - PRESS_T) / 0.3) : 1;
       const on = s.done;
       if (on) {
-        ctx.globalAlpha = isCurr ? doneAnim : 1;
-        roundRect(inX - 4, ry + 8, inW + 8, rowH - 16, 22);
+        ctx.globalAlpha = s.active ? doneAnim : 1;
+        roundRect(inX - 2, ry + 7, inW + 4, rowH - 14, 20);
         const gg = ctx.createLinearGradient(0, ry, 0, ry + rowH);
         gg.addColorStop(0, "rgba(255,122,26,0.16)"); gg.addColorStop(1, "rgba(255,122,26,0.05)");
         ctx.fillStyle = gg; ctx.fill();
         ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,122,26,0.30)"; ctx.stroke();
         ctx.globalAlpha = 1;
       }
-      // número
-      ctx.textAlign = "center"; ctx.font = `800 34px ${FONT}`;
-      ctx.fillStyle = on ? C.accent : C.textDim; ctx.fillText(String(s.n), colSet, cy + 12);
-      // anterior
-      ctx.fillStyle = C.textDim; ctx.font = `500 28px ${FONT}`; ctx.fillText(s.prev, colPrev, cy + 10);
-      // kg / reps
-      const valColor = on ? C.accent : C.text;
+      ctx.textAlign = "center"; ctx.font = `800 32px ${FONT}`;
+      ctx.fillStyle = on ? C.accent : C.textDim; ctx.fillText(String(i + 1), cSet, cy + 11);
+      ctx.fillStyle = C.textDim; ctx.font = `500 26px ${FONT}`; ctx.fillText(s.prev, cPrev, cy + 9);
       if (!on) {
-        roundRect(colKg - 62, cy - 34, 124, 68, 14); ctx.fillStyle = C.surfaceAlt; ctx.fill();
-        roundRect(colReps - 62, cy - 34, 124, 68, 14); ctx.fillStyle = C.surfaceAlt; ctx.fill();
+        roundRect(cKg - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
+        roundRect(cReps - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
       }
-      ctx.fillStyle = valColor; ctx.font = `800 44px ${FONT}`;
-      ctx.fillText(String(s.kg), colKg, cy + 14); ctx.fillText(String(s.reps), colReps, cy + 14);
-      // check
-      const chS = 62, chX = colChk - chS / 2, chY = cy - chS / 2;
-      const pop = isCurr ? 1 + 0.18 * Math.sin(clamp01((t - pressT) / 0.18) * Math.PI) : 1;
-      ctx.save(); ctx.translate(colChk, cy); ctx.scale(pop, pop); ctx.translate(-colChk, -cy);
-      roundRect(chX, chY, chS, chS, 16);
+      ctx.fillStyle = on ? C.accent : C.text; ctx.font = `800 40px ${FONT}`;
+      ctx.fillText(String(s.kg), cKg, cy + 13); ctx.fillText(String(s.reps), cReps, cy + 13);
+
+      const chS = 58, chX = cChk - chS / 2, chY = cy - chS / 2;
+      const pop = s.active ? 1 + 0.18 * Math.sin(clamp01((t - PRESS_T) / 0.18) * Math.PI) : 1;
+      ctx.save(); ctx.translate(cChk, cy); ctx.scale(pop, pop); ctx.translate(-cChk, -cy);
+      roundRect(chX, chY, chS, chS, 15);
       if (on) {
         const cg = ctx.createLinearGradient(chX, chY, chX, chY + chS);
         cg.addColorStop(0, C.sport); cg.addColorStop(1, C.accent);
-        ctx.fillStyle = cg; ctx.globalAlpha = isCurr ? doneAnim : 1; ctx.fill(); ctx.globalAlpha = 1;
-        checkMark(colChk, cy, chS * 0.7, "#1a0f06");
+        ctx.fillStyle = cg; ctx.globalAlpha = s.active ? doneAnim : 1; ctx.fill(); ctx.globalAlpha = 1;
+        checkMark(cChk, cy, chS * 0.7, "#1a0f06");
       } else {
         ctx.lineWidth = 3; ctx.strokeStyle = C.border; ctx.stroke();
-        checkMark(colChk, cy, chS * 0.62, "rgba(194,184,168,0.35)");
+        checkMark(cChk, cy, chS * 0.62, "rgba(194,184,168,0.35)");
       }
       ctx.restore();
 
-      // pista de toque antes de completar
-      if (isCurr && t < pressT) {
+      if (s.active && t < PRESS_T) {
         const pulse = (Math.sin(t * 6) + 1) / 2;
         ctx.globalAlpha = 0.35 + 0.35 * pulse;
-        ctx.beginPath(); ctx.arc(colChk, cy, chS * 0.6 + 12 * pulse, 0, 7);
+        ctx.beginPath(); ctx.arc(cChk, cy, chS * 0.6 + 12 * pulse, 0, 7);
         ctx.lineWidth = 4; ctx.strokeStyle = C.accent; ctx.stroke();
         ctx.globalAlpha = 1;
       }
       ry += rowH;
     });
 
-    // Añadir serie (discontinuo)
-    const asY = ry + 22, asX = inX, asW = inW, asH = 66;
+    const asY = ry + 16, asH = 62;
     ctx.save(); ctx.setLineDash([10, 8]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.4)";
-    roundRect(asX, asY, asW, asH, 18); ctx.stroke(); ctx.restore();
-    ctx.fillStyle = C.accent; ctx.textAlign = "center"; ctx.font = `700 32px ${FONT}`;
-    ctx.fillText("+  " + L.addSet, asX + asW / 2, asY + asH / 2 + 12);
+    roundRect(inX, asY, inW, asH, 16); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = C.accent; ctx.textAlign = "center"; ctx.font = `700 30px ${FONT}`;
+    ctx.fillText("+  " + L.addSet, inX + inW / 2, asY + asH / 2 + 11);
+    return cardH;
   }
 
-  function drawFlash(a) { a = clamp01(a); if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#fff"; roundRect(SX, SY, SW, SH, SR); ctx.fill(); ctx.restore(); }
+  function drawWorkout(t) {
+    const L = TX[langNow()];
+    drawStatusBar();
 
-  // ---------- Escena 2: subida de rango (dentro del móvil, paleta cálida) ----------
+    const done3 = t >= PRESS_T;
+    const ex1Rows = [
+      { prev: "10×12", kg: "12", reps: "12", done: true },
+      { prev: "12×10", kg: "12", reps: "10", done: true },
+      { prev: "12×9", kg: "14", reps: "8", done: true },
+    ];
+    const ex2Rows = [
+      { prev: "50×10", kg: "50", reps: "10", done: true },
+      { prev: "50×10", kg: "50", reps: "9", done: true },
+      { prev: "52×8", kg: weight, reps: reps, done: done3, active: true },
+    ];
+    const allRows = ex1Rows.concat(ex2Rows);
+    const vol = allRows.filter((s) => s.done).reduce((a, s) => a + (parseFloat(s.kg) || 0) * (parseInt(s.reps) || 0), 0);
+    const nDone = allRows.filter((s) => s.done).length;
+
+    // Barra de stats
+    const sbY = SY + 156;
+    const cols = [
+      { label: L.time, value: "12:04", clock: true },
+      { label: L.vol, value: String(Math.round(vol)) },
+      { label: L.sets, value: String(nDone) },
+      { label: L.muscles, value: "2" },
+    ];
+    const gx0 = SX + 26, gw = SW - 52, cw = gw / cols.length;
+    ctx.textAlign = "center";
+    cols.forEach((c, i) => {
+      const cx = gx0 + cw * i + cw / 2;
+      if (c.clock) {
+        const tw = ctx.measureText(c.value).width;
+        ctx.strokeStyle = C.accent; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, sbY - 62, 14, 0, 7); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, sbY - 62); ctx.lineTo(cx, sbY - 71); ctx.moveTo(cx, sbY - 62); ctx.lineTo(cx + 8, sbY - 62); ctx.stroke();
+      }
+      ctx.fillStyle = C.text; ctx.font = `800 44px ${FONT}`; ctx.fillText(c.value, cx, sbY);
+      ctx.fillStyle = C.textDim; ctx.font = `600 23px ${FONT}`; spacedText(c.label, cx, sbY + 38, 1);
+      if (i < cols.length - 1) { ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx0 + cw * (i + 1), sbY - 34); ctx.lineTo(gx0 + cw * (i + 1), sbY + 28); ctx.stroke(); }
+    });
+    ctx.strokeStyle = C.border; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(SX, sbY + 84); ctx.lineTo(SX + SW, sbY + 84); ctx.stroke();
+
+    // Dos tarjetas de ejercicio
+    const cardX = SX + 24, cardW = SW - 48;
+    let y = sbY + 112;
+    y += drawCard(cardX, y, cardW, L.ex1, ex1Rows, t) + 22;
+    drawCard(cardX, y, cardW, L.ex2, ex2Rows, t);
+  }
+
+  function drawFlash(a) { a = clamp01(a); if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#fff"; ctx.fillRect(SX, SY, SW, SH); ctx.restore(); }
+
+  // ---------- Escena 2: subida de rango ----------
   function drawRays(rt, cx, cy, alpha) {
     if (alpha <= 0.01) return;
     const n = 16;
@@ -225,9 +235,7 @@
     for (let i = 0; i < n; i++) {
       ctx.rotate((Math.PI * 2) / n);
       const grad = ctx.createLinearGradient(0, 0, 0, -1400);
-      grad.addColorStop(0, "rgba(255,205,140,0)");
-      grad.addColorStop(0.04, "rgba(255,190,120,0.24)");
-      grad.addColorStop(1, "rgba(255,190,120,0)");
+      grad.addColorStop(0, "rgba(255,205,140,0)"); grad.addColorStop(0.04, "rgba(255,190,120,0.24)"); grad.addColorStop(1, "rgba(255,190,120,0)");
       ctx.fillStyle = grad;
       ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(30, 0); ctx.lineTo(130, -1400); ctx.lineTo(-130, -1400); ctx.closePath(); ctx.fill();
     }
@@ -247,14 +255,12 @@
   }
   function drawRankUp(rt) {
     const L = TX[langNow()];
-    ctx.fillStyle = "#0a0705"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#0a0705"; ctx.fillRect(SX, SY, SW, SH);
     const cx = W / 2, cy = SY + SH * 0.34;
     const pulse = 0.5 + 0.5 * Math.sin(rt * 3);
     let rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, 900);
-    rg.addColorStop(0, `rgba(255,150,60,${0.26 + 0.1 * pulse})`);
-    rg.addColorStop(0.42, "rgba(180,90,30,0.14)");
-    rg.addColorStop(1, "rgba(10,7,5,0)");
-    ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    rg.addColorStop(0, `rgba(255,150,60,${0.26 + 0.1 * pulse})`); rg.addColorStop(0.42, "rgba(180,90,30,0.14)"); rg.addColorStop(1, "rgba(10,7,5,0)");
+    ctx.fillStyle = rg; ctx.fillRect(SX, SY, SW, SH);
 
     const app = clamp01((rt - 0.15) / 0.9);
     const emAlpha = clamp01((rt - 0.15) / 0.45);
@@ -264,10 +270,8 @@
 
     if (emAlpha > 0) {
       const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, 440 * Math.max(0.3, sc));
-      gr.addColorStop(0, `rgba(255,200,140,${0.5 * emAlpha})`);
-      gr.addColorStop(0.5, `rgba(255,140,50,${0.22 * emAlpha})`);
-      gr.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); ctx.restore();
+      gr.addColorStop(0, `rgba(255,200,140,${0.5 * emAlpha})`); gr.addColorStop(0.5, `rgba(255,140,50,${0.22 * emAlpha})`); gr.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = gr; ctx.fillRect(SX, SY, SW, SH); ctx.restore();
     }
 
     const landT = 0.9;
@@ -311,7 +315,6 @@
       spacedText(L.rankup, W / 2, ty, 8);
       ctx.restore();
     }
-
     const tRank = clamp01((rt - 1.15) / 0.5);
     if (tRank > 0) {
       const rscale = 0.82 + 0.18 * easeOut(tRank);
@@ -324,7 +327,6 @@
       spacedText(L.rank, 0, 0, 7);
       ctx.restore();
     }
-
     const tSub = clamp01((rt - 1.6) / 0.6);
     if (tSub > 0) {
       ctx.save(); ctx.globalAlpha = tSub; ctx.textAlign = "center";
@@ -334,13 +336,30 @@
     }
   }
 
+  // ---------- Vuelco: plano o isométrico ----------
+  function blitIso(src) {
+    const cx = W / 2, cy = H / 2;
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(-0.055); ctx.translate(-cx, -cy);
+    const N = 150, sL = 1.06, sR = 0.80, ov = 0.9, colW = src.width / N;
+    const sarr = [], widths = []; let tot = 0;
+    for (let i = 0; i < N; i++) { const u = (i + 0.5) / N; const s = (sL + (sR - sL) * u) * ov; sarr.push(s); const w = colW * s; widths.push(w); tot += w; }
+    let dx = cx - tot / 2;
+    for (let i = 0; i < N; i++) { const s = sarr[i], dh = src.height * s; ctx.drawImage(src, i * colW, 0, colW, src.height, dx, cy - dh / 2, widths[i] + 0.7, dh); dx += widths[i]; }
+    ctx.restore();
+  }
   function render(t) {
     const flashStart = 2.85, rankStart = 3.02;
+    ctx = pctx;
+    pctx.clearRect(0, 0, W, H);
     drawPhone(() => {
       if (t < flashStart) { drawWorkout(t); }
       else if (t < rankStart) { drawWorkout(flashStart); drawFlash((t - flashStart) / (rankStart - flashStart)); }
       else { const rt = t - rankStart; drawRankUp(rt); if (rt < 0.3) drawFlash(1 - rt / 0.3); }
     });
+    ctx = mainCtx;
+    mainCtx.clearRect(0, 0, W, H);
+    if (poseNow() === "iso") blitIso(pcv); else mainCtx.drawImage(pcv, 0, 0);
   }
 
   let encoding = false;
@@ -360,7 +379,12 @@
     a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(u), 8000);
   }
+  async function ensureEmblem() {
+    if (emblem.complete && emblem.naturalWidth) return;
+    await new Promise((res) => { emblem.onload = res; emblem.onerror = res; setTimeout(res, 3000); });
+  }
   window.__rankupDownload = async function () {
+    await ensureEmblem();
     if (window.mp4Support && window.mp4Support()) {
       const enc = await window.makeMp4Encoder(W, H, 30, 12000000);
       if (enc) {
