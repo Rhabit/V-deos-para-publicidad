@@ -24,22 +24,29 @@
     <div class="mk-top__brand">
       <span class="mk-logo"><svg class="ico"><use href="#i-video"/></svg></span>
       <div>
-        <strong>Rhabit · Vídeos para publicidad</strong>
-        <span>Clips 9:16 · 1080×1920 · elige pose y color, descarga directa</span>
+        <strong data-i18n="brand">Rhabit · Vídeos para publicidad</strong>
+        <span data-i18n="tagline">Clips 9:16 · 1080×1920 · elige pose y color, descarga directa</span>
       </div>
     </div>
     <div class="mk-controls">
       <div class="mk-field">
-        <span>Pose</span>
+        <span data-i18n="pose">Pose</span>
         <div class="seg" id="mk-pose">
-          <button type="button" data-pose="iso" class="on">Isométrico</button>
-          <button type="button" data-pose="flat">Plano</button>
+          <button type="button" data-pose="iso" data-i18n="iso" class="on">Isométrico</button>
+          <button type="button" data-pose="flat" data-i18n="flat">Plano</button>
         </div>
       </div>
       <label class="mk-field">
-        <span>Fondo</span>
+        <span data-i18n="bg">Fondo</span>
         <input type="color" id="mk-color" value="#202124" />
       </label>
+      <div class="mk-field">
+        <span data-i18n="langLabel">Idioma</span>
+        <div class="seg" id="mk-lang">
+          <button type="button" data-lang="es" class="on">ES</button>
+          <button type="button" data-lang="en">EN</button>
+        </div>
+      </div>
     </div>
   </header>
 

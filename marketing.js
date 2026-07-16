@@ -8,14 +8,23 @@
   const colorInput = document.getElementById("mk-color");
   const root = document.documentElement;
   let pose = "iso";
+  let lang = "es";
 
-  const srcFor = (base) => `assets/clips/${base}-${pose}.webm`;
+  // Clip por idioma: <base>-<pose>-en.webm en inglés; ES es el nombre sin sufijo.
+  const srcFor = (base) => `assets/clips/${base}-${pose}${lang === "en" ? "-en" : ""}.webm`;
 
   function setVideos() {
     clips.forEach((clip) => {
       const v = clip.querySelector("video");
       const want = srcFor(clip.dataset.base);
-      if (!v.src.endsWith(want)) { v.src = want; v.play().catch(() => {}); }
+      if (v.dataset.want === want) return;
+      v.dataset.want = want;
+      // Si aún no existe la versión EN del clip, cae a la ES (no rompe la galería).
+      v.onerror = () => {
+        const es = want.replace("-en.webm", ".webm");
+        if (es !== want && !(v.currentSrc || v.src).endsWith(es)) { v.src = es; v.play().catch(() => {}); }
+      };
+      v.src = want; v.play().catch(() => {});
     });
   }
   setVideos();
@@ -28,6 +37,51 @@
       setVideos();
     });
   });
+
+  // ---- Idioma (ES/EN): traduce toda la UI + títulos y cambia el clip ----
+  const langSeg = document.getElementById("mk-lang");
+  const UI = {
+    brand:     { es: "Rhabit · Vídeos para publicidad", en: "Rhabit · Marketing videos" },
+    tagline:   { es: "Clips 9:16 · 1080×1920 · elige pose y color, descarga directa", en: "9:16 clips · 1080×1920 · pick pose & color, direct download" },
+    pose:      { es: "Pose", en: "Pose" },
+    iso:       { es: "Isométrico", en: "Isometric" },
+    flat:      { es: "Plano", en: "Flat" },
+    bg:        { es: "Fondo", en: "Background" },
+    langLabel: { es: "Idioma", en: "Language" },
+  };
+  const CLIP_TX = {
+    exercise: { pill: { es: "Entrenos", en: "Workouts" },        title: { es: "Entrena con guía visual", en: "Train with visual guidance" } },
+    calendar: { pill: { es: "Organización", en: "Organization" }, title: { es: "Tu mes entero de un vistazo", en: "Your whole month at a glance" } },
+    filter:   { pill: { es: "Organización", en: "Organization" }, title: { es: "Filtra el mes por hábito", en: "Filter the month by habit" } },
+    swipe:    { pill: { es: "Hábitos", en: "Habits" },           title: { es: "Repasa tu día con un swipe", en: "Review your day with a swipe" } },
+    swipe2:   { pill: { es: "Hábitos", en: "Habits" },           title: { es: "Swipe de hábitos · anuncio", en: "Habit swipe · ad" } },
+    gym:      { pill: { es: "Entrenos", en: "Workouts" },        title: { es: "Registra cada serie", en: "Log every set" } },
+  };
+  const DL = { es: "Descargar vídeo", en: "Download video" };
+
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const k = el.dataset.i18n; if (UI[k]) el.textContent = UI[k][lang];
+    });
+    clips.forEach((clip) => {
+      const tx = CLIP_TX[clip.dataset.base]; if (!tx) return;
+      const pill = clip.querySelector(".pill");
+      if (pill && pill.lastChild) pill.lastChild.nodeValue = " " + tx.pill[lang];
+      const h2 = clip.querySelector("h2"); if (h2) h2.textContent = tx.title[lang];
+      const btn = clip.querySelector("[data-dl]");
+      if (btn && btn.lastChild) btn.lastChild.nodeValue = " " + DL[lang];
+    });
+  }
+  langSeg.querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => {
+      lang = b.dataset.lang;
+      langSeg.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+      applyLang();
+      setVideos();
+    });
+  });
+  applyLang();
 
   // ---- Color ----
   colorInput.addEventListener("input", () => root.style.setProperty("--clipbg", colorInput.value));
@@ -51,11 +105,11 @@
     const prev = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = "Generando…";
     try {
-      if (serverOk) {
+      if (serverOk && lang === "es") {
         try { await serverDownload(clip); }
         catch (e) { await clientDownload(clip); }
       } else {
-        await clientDownload(clip);
+        await clientDownload(clip); // EN o sitio estático: se compone en el navegador
       }
     } catch (err) {
       alert("No se pudo generar el vídeo en este navegador. Prueba con Chrome de escritorio.");
@@ -81,7 +135,8 @@
   // por red se atasca y grabaría un fotograma congelado.
   async function clientDownload(clip) {
     const color = colorInput.value || "#202124";
-    const resp = await fetch(srcFor(clip.dataset.base));
+    const v0 = clip.querySelector("video");
+    const resp = await fetch((v0 && v0.currentSrc) || srcFor(clip.dataset.base));
     if (!resp.ok) throw new Error("no carga el clip");
     const clipUrl = URL.createObjectURL(await resp.blob());
     try {
@@ -106,7 +161,7 @@
             clearTimeout(guard);
             const blob = new Blob(chunks, { type: mime.split(";")[0] });
             if (blob.size < 1000) { reject(new Error("grabación vacía")); return; }
-            saveBlob(blob, `${clip.dataset.name}-${pose}.${ext}`);
+            saveBlob(blob, `${clip.dataset.name}-${pose}${lang === "en" ? "-en" : ""}.${ext}`);
             resolve();
           };
           let raf = 0;
@@ -146,7 +201,8 @@
   const lvid = document.getElementById("mk-light-video");
   clips.forEach((clip) => {
     clip.querySelector(".clip__full").addEventListener("click", () => {
-      lvid.src = srcFor(clip.dataset.base); light.hidden = false; lvid.play().catch(() => {});
+      const cv = clip.querySelector("video");
+      lvid.src = (cv && cv.currentSrc) || srcFor(clip.dataset.base); light.hidden = false; lvid.play().catch(() => {});
     });
   });
   const close = () => { light.hidden = true; lvid.pause(); lvid.removeAttribute("src"); lvid.load(); };
