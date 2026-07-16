@@ -94,7 +94,14 @@
   }
 
   // ---------- Escena 1: registro de series (dos ejercicios) ----------
-  const PRESS_T = 2.0;
+  // Se anima UNA sola serie: primero el peso, luego las reps, luego se completa.
+  const KG_T0 = 0.5, KG_T1 = 1.15, RP_T0 = 1.45, RP_T1 = 2.0, PRESS_T = 2.2;
+  function typeNum(target, t, t0, t1) {
+    const tgt = parseInt(target) || 0;
+    if (t < t0) return "";
+    if (t >= t1 || !tgt) return String(target);
+    return String(Math.round(tgt * ((t - t0) / (t1 - t0))));
+  }
   function drawCard(x, y, w, name, rows, t, thumb) {
     const headH = 118, colH = 54, rowH = 92, pad = 22;
     const cardH = headH + colH + rowH * rows.length + 74 + pad;
@@ -143,12 +150,24 @@
       ctx.textAlign = "center"; ctx.font = `800 32px ${FONT}`;
       ctx.fillStyle = on ? C.accent : C.textDim; ctx.fillText(String(i + 1), cSet, cy + 11);
       ctx.fillStyle = C.textDim; ctx.font = `500 26px ${FONT}`; ctx.fillText(s.prev, cPrev, cy + 9);
+      let kgTxt = String(s.kg), repsTxt = String(s.reps), kgFocus = false, repsFocus = false;
+      if (s.active) {
+        kgTxt = typeNum(s.kg, t, KG_T0, KG_T1); repsTxt = typeNum(s.reps, t, RP_T0, RP_T1);
+        kgFocus = t >= KG_T0 && t < RP_T0; repsFocus = t >= RP_T0 && t < PRESS_T;
+      }
       if (!on) {
         roundRect(cKg - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
+        if (kgFocus) { ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.stroke(); }
         roundRect(cReps - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
+        if (repsFocus) { ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.stroke(); }
       }
-      ctx.fillStyle = on ? C.accent : C.text; ctx.font = `800 40px ${FONT}`;
-      ctx.fillText(String(s.kg), cKg, cy + 13); ctx.fillText(String(s.reps), cReps, cy + 13);
+      ctx.fillStyle = on ? C.accent : C.text; ctx.font = `800 40px ${FONT}`; ctx.textAlign = "center";
+      ctx.fillText(kgTxt, cKg, cy + 13); ctx.fillText(repsTxt, cReps, cy + 13);
+      // Cursor parpadeante en la casilla que se está rellenando y aún vacía.
+      if ((kgFocus && !kgTxt) || (repsFocus && !repsTxt)) {
+        const bx = (kgFocus && !kgTxt) ? cKg : cReps;
+        if (Math.floor(t * 2) % 2 === 0) { ctx.fillStyle = C.accent; ctx.fillRect(bx - 2, cy - 20, 4, 40); }
+      }
 
       const chS = 58, chX = cChk - chS / 2, chY = cy - chS / 2;
       const pop = s.active ? 1 + 0.18 * Math.sin(clamp01((t - PRESS_T) / 0.18) * Math.PI) : 1;
@@ -165,7 +184,7 @@
       }
       ctx.restore();
 
-      if (s.active && t < PRESS_T) {
+      if (s.active && t >= RP_T1 && t < PRESS_T) {
         const pulse = (Math.sin(t * 6) + 1) / 2;
         ctx.globalAlpha = 0.35 + 0.35 * pulse;
         ctx.beginPath(); ctx.arc(cChk, cy, chS * 0.6 + 12 * pulse, 0, 7);
