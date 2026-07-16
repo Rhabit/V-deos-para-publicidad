@@ -18,6 +18,10 @@
     <symbol id="i-swipe" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M7 9l-3 3 3 3"/><path d="M17 9l3 3-3 3"/></symbol>
     <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></symbol>
     <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6.5 8v5l-3 1.5V13z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M4 17l5-5 4 4 3-3 4 4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></symbol>
   </svg>
 
   <header class="mk-top">
@@ -51,6 +55,22 @@
   </header>
 
   <main class="clips" id="clips">
+
+    <article class="clip clip--lock" data-base="lock" data-name="rhabit-pantalla-bloqueo">
+      <div class="clip__video">
+        <canvas id="lock-canvas" class="lock-canvas"></canvas>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-bell"/></svg> Notificaciones</span>
+        <h2>Pantalla de bloqueo</h2>
+        <div class="lock-ctrl">
+          <label class="lock-file"><svg class="ico"><use href="#i-image"/></svg> <span data-i18n="lockWall">Fondo de pantalla</span><input type="file" id="lock-wall" accept="image/*" hidden></label>
+          <div class="lock-list" id="lock-list"></div>
+          <button type="button" class="lock-add" id="lock-add"><svg class="ico"><use href="#i-plus"/></svg> <span data-i18n="lockAdd">Añadir notificación</span></button>
+        </div>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
 
     <article class="clip" data-base="exercise" data-name="rhabit-entreno-guiado">
       <div class="clip__video">
@@ -131,5 +151,6 @@
   </div>
 
   <script src="marketing.js"></script>
+  <script src="lockscreen.js"></script>
 </body>
 </html>

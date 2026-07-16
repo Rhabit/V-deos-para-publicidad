@@ -16,6 +16,7 @@
   function setVideos() {
     clips.forEach((clip) => {
       const v = clip.querySelector("video");
+      if (!v) return; // clips sin vídeo (p.ej. pantalla de bloqueo en canvas)
       const want = srcFor(clip.dataset.base);
       if (v.dataset.want === want) return;
       v.dataset.want = want;
@@ -48,8 +49,11 @@
     flat:      { es: "Plano", en: "Flat" },
     bg:        { es: "Fondo", en: "Background" },
     langLabel: { es: "Idioma", en: "Language" },
+    lockWall:  { es: "Fondo de pantalla", en: "Wallpaper" },
+    lockAdd:   { es: "Añadir notificación", en: "Add notification" },
   };
   const CLIP_TX = {
+    lock:     { pill: { es: "Notificaciones", en: "Notifications" }, title: { es: "Pantalla de bloqueo", en: "Lock screen" } },
     exercise: { pill: { es: "Entrenos", en: "Workouts" },        title: { es: "Entrena con guía visual", en: "Train with visual guidance" } },
     calendar: { pill: { es: "Organización", en: "Organization" }, title: { es: "Tu mes entero de un vistazo", en: "Your whole month at a glance" } },
     filter:   { pill: { es: "Organización", en: "Organization" }, title: { es: "Filtra el mes por hábito", en: "Filter the month by habit" } },
@@ -105,7 +109,9 @@
     const prev = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = "Generando…";
     try {
-      if (serverOk && lang === "es") {
+      if (clip.dataset.base === "lock") {
+        if (window.__lockDownload) await window.__lockDownload();
+      } else if (serverOk && lang === "es") {
         try { await serverDownload(clip); }
         catch (e) { await clientDownload(clip); }
       } else {
@@ -200,7 +206,9 @@
   const light = document.getElementById("mk-light");
   const lvid = document.getElementById("mk-light-video");
   clips.forEach((clip) => {
-    clip.querySelector(".clip__full").addEventListener("click", () => {
+    const full = clip.querySelector(".clip__full");
+    if (!full) return; // el clip de canvas (lock) no tiene lightbox
+    full.addEventListener("click", () => {
       const cv = clip.querySelector("video");
       lvid.src = (cv && cv.currentSrc) || srcFor(clip.dataset.base); light.hidden = false; lvid.play().catch(() => {});
     });

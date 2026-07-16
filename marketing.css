@@ -78,3 +78,36 @@ body.mk{ min-height:100vh; background:var(--bg); }
 }
 .mk-light__box{background:var(--clipbg);border-radius:18px;overflow:hidden}
 .mk-light video{display:block;max-height:90vh;aspect-ratio:9/16}
+
+/* ---------- Pantalla de bloqueo (canvas + editor) ---------- */
+.lock-canvas{display:block;width:100%;aspect-ratio:9/16;background:#0c0806}
+.lock-ctrl{display:flex;flex-direction:column;gap:9px;margin:2px 0 4px}
+.lock-file{
+  display:inline-flex;align-items:center;gap:8px;align-self:flex-start;cursor:pointer;
+  padding:8px 13px;border:1px solid var(--border);border-radius:10px;background:#1a140f;
+  color:var(--text);font-size:13px;font-weight:600;transition:.15s var(--ease);
+}
+.lock-file:hover{border-color:var(--accent);color:var(--accent)}
+.lock-file .ico{width:16px;height:16px}
+.lock-list{display:flex;flex-direction:column;gap:7px}
+.lock-row{display:flex;gap:7px;align-items:center}
+.lock-row input{
+  background:#140f0b;border:1px solid var(--border);border-radius:9px;color:var(--text);
+  padding:9px 11px;font-size:13px;font-family:inherit;min-width:0;
+}
+.lock-row input:focus{outline:none;border-color:var(--accent)}
+.lock-row .lock-app{width:82px;flex:none}
+.lock-row .lock-text{flex:1}
+.lock-del{
+  flex:none;width:36px;height:36px;display:grid;place-items:center;cursor:pointer;
+  border:1px solid var(--border);border-radius:9px;background:#1a140f;color:var(--dim);transition:.15s var(--ease);
+}
+.lock-del:hover{border-color:#a33;color:#ff6b5a}
+.lock-del .ico{width:16px;height:16px}
+.lock-add{
+  display:inline-flex;align-items:center;gap:7px;align-self:flex-start;cursor:pointer;
+  padding:8px 13px;border:1px dashed var(--border);border-radius:10px;background:transparent;
+  color:var(--dim);font-size:13px;font-weight:600;font-family:inherit;transition:.15s var(--ease);
+}
+.lock-add:hover{border-color:var(--accent);color:var(--accent)}
+.lock-add .ico{width:15px;height:15px}
