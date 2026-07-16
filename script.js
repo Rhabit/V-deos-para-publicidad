@@ -507,25 +507,37 @@ if (form) form.addEventListener("submit", async (e) => {
   const schScroll = document.getElementById("fsch-scroll");
   const schBody   = document.getElementById("fsch-body");
 
-  const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
-                  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const WDAYS  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  const LANG = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "es";
+  const L = (es, en) => (LANG === "en" ? en : es);
+  const HLABELS = { all: L("Todos los hábitos", "All habits"), gimnasio: L("Gimnasio", "Gym"), leer: L("Leer", "Read"), agua: L("Beber agua", "Drink water"), meditar: L("Meditar", "Meditate") };
+  if (LANG === "en") {
+    // Texto fijo del HTML: cabecera de días de semana (L-D → M-S) y menú de filtro.
+    document.querySelectorAll("#filter-screen .cal-weekdays span:not(.cal-wk)").forEach((s, i) => { s.textContent = ["M", "T", "W", "T", "F", "S", "S"][i]; });
+    const mt = menu.querySelector(".fcal-menu__title"); if (mt) mt.textContent = "Filter by habit";
+    opts.forEach((o) => { const t = o.querySelector(".fcal-opt__t"); if (t && HLABELS[o.dataset.opt]) t.textContent = HLABELS[o.dataset.opt]; });
+    const yt = document.getElementById("fcal-year-title"); if (yt) yt.textContent = "Gym";
+  }
+
+  const MONTHS = L(["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],
+                   ["January","February","March","April","May","June","July","August","September","October","November","December"]);
+  const WDAYS  = L(["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"],
+                   ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]);
   const _now  = new Date();
   const TODAY = { y: _now.getFullYear(), m: _now.getMonth(), d: _now.getDate() };
 
   // Franja horaria (agenda por horas del día de hoy) — bajo la rejilla del mes.
   const HOUR_H = 30;
   const SCH = [
-    { h: 8,  m: 15, dur: 55, t: "Gimnasio",   s: "Pecho y tríceps", c: "#22c55e", i: "dumbbell" },
-    { h: 13, m: 0,  dur: 30, t: "Beber agua", s: "Meta 2 L",        c: "#38bdf8", i: "droplet"  },
-    { h: 18, m: 30, dur: 45, t: "Leer",       s: "20 páginas",      c: "#f5b14a", i: "book"     },
-    { h: 21, m: 0,  dur: 25, t: "Meditar",    s: "Antes de dormir", c: "#9b8cff", i: "wind"     },
+    { h: 8,  m: 15, dur: 55, t: L("Gimnasio", "Gym"),        s: L("Pecho y tríceps", "Chest & triceps"), c: "#22c55e", i: "dumbbell" },
+    { h: 13, m: 0,  dur: 30, t: L("Beber agua", "Drink water"), s: L("Meta 2 L", "2 L goal"),            c: "#38bdf8", i: "droplet"  },
+    { h: 18, m: 30, dur: 45, t: L("Leer", "Read"),           s: L("20 páginas", "20 pages"),             c: "#f5b14a", i: "book"     },
+    { h: 21, m: 0,  dur: 25, t: L("Meditar", "Meditate"),    s: L("Antes de dormir", "Before bed"),      c: "#9b8cff", i: "wind"     },
   ];
   function renderSchedule() {
     if (!schBody) return;
     const H0 = 6, H1 = 23;
     const wd = WDAYS[new Date(TODAY.y, TODAY.m, TODAY.d).getDay()];
-    schTitle.innerHTML = `Hoy · <b>${wd} ${TODAY.d}</b>`;
+    schTitle.innerHTML = `${L("Hoy", "Today")} · <b>${wd} ${TODAY.d}</b>`;
     let html = "";
     for (let h = H0; h <= H1; h++)
       html += `<div class="sch-hour" style="height:${HOUR_H}px"><span>${String(h).padStart(2, "0")}:00</span></div>`;
@@ -565,10 +577,10 @@ if (form) form.addEventListener("submit", async (e) => {
 
   // Hábitos del menú (id -> etiqueta, color y días completados este mes).
   const HABITS = {
-    gimnasio: { label: "Gimnasio",   color: "#22c55e", days: randDays(0.46) },
-    leer:     { label: "Leer",       color: "#f5b14a", days: randDays(0.5)  },
-    agua:     { label: "Beber agua", color: "#38bdf8", days: randDays(0.72) },
-    meditar:  { label: "Meditar",    color: "#9b8cff", days: randDays(0.44) },
+    gimnasio: { label: HLABELS.gimnasio, color: "#22c55e", days: randDays(0.46) },
+    leer:     { label: HLABELS.leer,     color: "#f5b14a", days: randDays(0.5)  },
+    agua:     { label: HLABELS.agua,     color: "#38bdf8", days: randDays(0.72) },
+    meditar:  { label: HLABELS.meditar,  color: "#9b8cff", days: randDays(0.44) },
   };
   // Estado "Todos": anillo de progreso aleatorio por día (día -> % completado).
   const ALL_DONE = {};
@@ -613,7 +625,9 @@ if (form) form.addEventListener("submit", async (e) => {
       html += `<div class="fyr-m"><div class="fyr-m__name">${MONTHS[mo].slice(0, 3)}</div><div class="fyr-days">${cells}</div></div>`;
     }
     yearGrid.innerHTML = html;
-    if (yearFoot) yearFoot.innerHTML = `<b>${gymYearTotal}</b> días de Gimnasio en ${TODAY.y}`;
+    if (yearFoot) yearFoot.innerHTML = LANG === "en"
+      ? `<b>${gymYearTotal}</b> Gym days in ${TODAY.y}`
+      : `<b>${gymYearTotal}</b> días de Gimnasio en ${TODAY.y}`;
   }
   const showYear  = () => { if (monthEl) monthEl.hidden = true;  if (yearEl) yearEl.hidden = false; };
   const showMonth = () => { if (yearEl) yearEl.hidden = true;   if (monthEl) monthEl.hidden = false; };
@@ -701,7 +715,7 @@ if (form) form.addEventListener("submit", async (e) => {
 
   function setFilter(id, pop) {
     const h = id === "all" ? null : HABITS[id];
-    label.textContent = h ? h.label : "Todos los hábitos";
+    label.textContent = h ? h.label : HLABELS.all;
     dot.style.background = h ? h.color : "";
     filterBtn.style.setProperty("--fc", h ? h.color : "var(--accent)");
     filterBtn.classList.toggle("on", !!h);
@@ -709,7 +723,8 @@ if (form) form.addEventListener("submit", async (e) => {
     render(id, pop);
     if (h) {
       caption.style.setProperty("--fc", h.color);
-      caption.innerHTML = `<b>${h.days.filter(d => d <= new Date(TODAY.y, TODAY.m + 1, 0).getDate()).length}</b> días de ${h.label} este mes`;
+      const n = h.days.filter(d => d <= new Date(TODAY.y, TODAY.m + 1, 0).getDate()).length;
+      caption.innerHTML = LANG === "en" ? `<b>${n}</b> ${h.label} days this month` : `<b>${n}</b> días de ${h.label} este mes`;
       caption.classList.add("show");
     } else {
       caption.classList.remove("show");
@@ -822,11 +837,11 @@ if (form) form.addEventListener("submit", async (e) => {
   // 3) Un año de constancia (vista anual)  4) CTA.
   function runFilterIntro() {
     reset();
-    if (reduce) { setFilter("gimnasio", false); showCard("Rhabit", "Filtra por hábito"); return; }
+    if (reduce) { setFilter("gimnasio", false); showCard("Rhabit", L("Filtra por hábito", "Filter by habit")); return; }
     runCamera();
 
     // 1 · Filtrar por hábito
-    T(() => showCard("Rhabit", "Filtra por hábito"), 200);
+    T(() => showCard("Rhabit", L("Filtra por hábito", "Filter by habit")), 200);
     T(() => hideCard(), 1900);
     T(() => movePointer(filterBtn), 2450);
     T(() => { tap(); }, 2850);
@@ -836,18 +851,18 @@ if (form) form.addEventListener("submit", async (e) => {
     T(() => { optByOpt("gimnasio").classList.remove("hover"); closeMenu(); setFilter("gimnasio", true); pointer.classList.remove("on"); }, 4550);
 
     // 2 · Planifica tu día (franja horaria)
-    T(() => showCard("Organización", "Planifica tu día"), 6350);
+    T(() => showCard(L("Organización", "Organize"), L("Planifica tu día", "Plan your day")), 6350);
     T(() => hideCard(), 8000);
     T(() => tweenSchedule(30, 380, 2100), 8300);
 
     // 3 · Un año de constancia (vista anual) — cambia de vista con el móvil oculto
-    T(() => showCard("Constancia", "Un año entero, a la vista"), 10350);
+    T(() => showCard(L("Constancia", "Consistency"), L("Un año entero, a la vista", "A whole year at a glance")), 10350);
     T(() => { showYear(); }, 11000);
     T(() => hideCard(), 12000);
 
     // 4 · CTA — vuelve al mes "Todos" (móvil oculto) para cerrar el bucle
     T(() => { showMonth(); setFilter("all", false); }, 14150);
-    T(() => showCard("Empieza gratis", "Crea disciplina que se ve"), 14300);
+    T(() => showCard(L("Empieza gratis", "Start free"), L("Crea disciplina que se ve", "Build visible discipline")), 14300);
   }
 
   if (screen && "IntersectionObserver" in window) {
@@ -893,12 +908,23 @@ if (form) form.addEventListener("submit", async (e) => {
     later: screen.querySelector('[data-act="later"]'),
   };
 
+  const LANG = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "es";
+  const L = (es, en) => (LANG === "en" ? en : es);
+  // Cabecera y botones (texto fijo del HTML) en inglés cuando toca.
+  if (LANG === "en") {
+    const k = screen.querySelector(".sw-kicker"); if (k) k.textContent = "Review habits";
+    const t = screen.querySelector(".sw-title");  if (t) t.textContent = "Habit swipe";
+    if (btns.done)  btns.done.setAttribute("aria-label", "Done");
+    if (btns.fail)  btns.fail.setAttribute("aria-label", "Not done");
+    if (btns.later) btns.later.setAttribute("aria-label", "Later");
+  }
+
   const HABITS = [
-    { name: "Emprendimiento", prompt: "¿Ya lo completaste?",   c: "#ff7a1a", vid: "work.webp" },
-    { name: "Skin care",      prompt: "¿Cómo fue hoy?",        c: "#f472b6", vid: "skin.webp" },
-    { name: "Meditar",        prompt: "¿Lo sacaste adelante?", c: "#9b8cff", vid: "meditar.webp" },
-    { name: "Beber agua",     prompt: "¿Lo hiciste hoy?",      c: "#3fb6ff", vid: "agua.webp" },
-    { name: "Leer",           prompt: "¿Lo has cumplido hoy?", c: "#f5b14a", vid: "leer.webp" },
+    { name: L("Emprendimiento", "Side project"), prompt: L("¿Ya lo completaste?", "Already done?"),   c: "#ff7a1a", vid: "work.webp" },
+    { name: L("Skin care", "Skin care"),         prompt: L("¿Cómo fue hoy?", "How did it go?"),        c: "#f472b6", vid: "skin.webp" },
+    { name: L("Meditar", "Meditate"),            prompt: L("¿Lo sacaste adelante?", "Did you nail it?"),c: "#9b8cff", vid: "meditar.webp" },
+    { name: L("Beber agua", "Drink water"),      prompt: L("¿Lo hiciste hoy?", "Did you do it?"),      c: "#3fb6ff", vid: "agua.webp" },
+    { name: L("Leer", "Read"),                   prompt: L("¿Lo has cumplido hoy?", "Have you done it?"),c: "#f5b14a", vid: "leer.webp" },
   ];
   const STACK = 3;
   const COL = { done: "#f5b14a", fail: "#ef5b3c", later: "#ff7a1a" };
@@ -907,14 +933,14 @@ if (form) form.addEventListener("submit", async (e) => {
   const cardHTML = (h) => `
     <div class="sw-card" style="--c:${h.c}">
       <div class="sw-wash"></div>
-      <div class="sw-stamp sw-stamp--done"><svg class="ico"><use href="#i-check"/></svg>Hecho</div>
-      <div class="sw-stamp sw-stamp--fail"><svg class="ico"><use href="#i-x"/></svg>No hecho</div>
-      <div class="sw-stamp sw-stamp--later"><svg class="ico"><use href="#i-clock"/></svg>Más tarde</div>
-      <div class="sw-chip"><i></i> Hoy</div>
+      <div class="sw-stamp sw-stamp--done"><svg class="ico"><use href="#i-check"/></svg>${L("Hecho", "Done")}</div>
+      <div class="sw-stamp sw-stamp--fail"><svg class="ico"><use href="#i-x"/></svg>${L("No hecho", "Not done")}</div>
+      <div class="sw-stamp sw-stamp--later"><svg class="ico"><use href="#i-clock"/></svg>${L("Más tarde", "Later")}</div>
+      <div class="sw-chip"><i></i> ${L("Hoy", "Today")}</div>
       <div class="sw-hero${h.vid ? " sw-hero--vid" : ""}">${h.vid ? `<img src="${h.vid}" alt="" aria-hidden="true">` : `<svg class="ico"><use href="#i-${h.i}"/></svg>`}</div>
       <div class="sw-name">${h.name}</div>
       <div class="sw-prompt">${h.prompt}</div>
-      <div class="sw-swipehint"><svg class="ico"><use href="#i-swipe"/></svg> Desliza para responder</div>
+      <div class="sw-swipehint"><svg class="ico"><use href="#i-swipe"/></svg> ${L("Desliza para responder", "Swipe to answer")}</div>
     </div>`;
 
   function buildProgress() { progEl.innerHTML = HABITS.map(() => `<div class="sw-seg"><span></span></div>`).join(""); }
@@ -924,7 +950,7 @@ if (form) form.addEventListener("submit", async (e) => {
     deck.innerHTML = "";
     if (queue.length === 0) {
       deck.innerHTML = `<div class="sw-done"><div class="sw-done__ring"><svg class="ico"><use href="#i-check"/></svg></div>` +
-        `<h4>¡Día repasado!</h4><p>Has revisado ${reviewed} hábitos</p></div>`;
+        `<h4>${L("¡Día repasado!", "Day reviewed!")}</h4><p>${L("Has revisado", "You've reviewed")} ${reviewed} ${L("hábitos", "habits")}</p></div>`;
       return;
     }
     const visible = queue.slice(0, STACK).reverse();
@@ -1050,11 +1076,11 @@ if (form) form.addEventListener("submit", async (e) => {
 
   function runSwipeIntro() {
     reset();
-    if (reduce) { showCard("Rhabit", "Revisa tus hábitos con un gesto"); return; }
+    if (reduce) { showCard("Rhabit", L("Revisa tus hábitos con un gesto", "Review your habits with a swipe")); return; }
     runCamera();
 
     // Tarjeta intro
-    T(() => showCard("Rhabit", "Revisa tu día en segundos"), 200);
+    T(() => showCard("Rhabit", L("Revisa tu día en segundos", "Review your day in seconds")), 200);
     T(() => hideCard(), 1850);
     // Demo — recorre TODAS las cartas deslizando a los lados (Hecho=der / No hecho=izq)
     T(() => dragSwipe("done"), 2900);
@@ -1063,7 +1089,7 @@ if (form) form.addEventListener("submit", async (e) => {
     T(() => dragSwipe("done"), 7100);
     T(() => dragSwipe("fail"), 8500);
     // Tarjeta CTA
-    T(() => showCard("Empieza gratis", "Crea el hábito, cada día"), 11550);
+    T(() => showCard(L("Empieza gratis", "Start free"), L("Crea el hábito, cada día", "Build the habit, every day")), 11550);
   }
 
   if (screen && "IntersectionObserver" in window) {

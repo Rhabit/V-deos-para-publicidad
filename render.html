@@ -168,6 +168,15 @@
     </div>
   </div>
 
+  <script>
+    // Fuerza el idioma del mockup (?lang=en) antes de i18n.js: así los clips se
+    // pueden renderizar en inglés para las versiones -en.webm.
+    try {
+      var _l = new URLSearchParams(location.search).get("lang");
+      if (_l === "en") localStorage.setItem("rhabit_lang", "en");
+      else localStorage.removeItem("rhabit_lang");
+    } catch (e) {}
+  </script>
   <script src="i18n.js"></script>
   <script src="script.js"></script>
   <script>
