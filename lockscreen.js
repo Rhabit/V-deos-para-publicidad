@@ -185,7 +185,7 @@
   }
   addBtn.addEventListener("click", () => {
     const colors = ["#ff7a1a", "#3fb6ff", "#22c55e", "#9b8cff", "#f472b6"];
-    notifs.push({ app: "Rhabit", text: "", color: colors[notifs.length % colors.length], icon: null, iconSrc: null });
+    notifs.push({ app: "Rhabit", text: "", color: colors[notifs.length % colors.length], icon: rhabitIcon, iconSrc: "assets/rhabit-icon.png" });
     untouched = false; renderList(); restart();
   });
   wallInput.addEventListener("change", () => {
