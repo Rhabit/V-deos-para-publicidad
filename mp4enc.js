@@ -28,6 +28,7 @@
         target: new Mp4Muxer.ArrayBufferTarget(),
         video: { codec: "avc", width: W, height: H },
         fastStart: "in-memory",
+        firstTimestampBehavior: "offset",
       });
       encoder = new VideoEncoder({
         output: (chunk, meta) => { try { muxer.addVideoChunk(chunk, meta); } catch (e) { failed = true; } },

@@ -160,37 +160,50 @@
   }
 
   // MP4 real: reproduce el clip y codifica cada fotograma con WebCodecs H.264.
+  // Usa requestAnimationFrame + video.currentTime (fiable) en vez de RVFC, que en
+  // algunos entornos no dispara; deduplica por currentTime (timestamps monótonos).
   async function encodeClipMp4(v, canvas, ctx, color, W, H, nameBase) {
-    if (!window.mp4Support || !window.mp4Support() || !v.requestVideoFrameCallback) return false;
+    if (!window.mp4Support || !window.mp4Support()) return false;
     const enc = await window.makeMp4Encoder(W, H, 60, 12000000);
     if (!enc) return false;
+    // Espera a poder reproducir sin cortes (en red, si no, no se pintan frames).
+    if (v.readyState < 3) await new Promise((res) => {
+      const go = () => res();
+      v.addEventListener("canplaythrough", go, { once: true });
+      v.addEventListener("canplay", go, { once: true });
+      setTimeout(go, 2500);
+    });
     let n = 0;
     try {
       await new Promise((resolve, reject) => {
-        let done = false;
-        const finish = () => { if (!done) { done = true; resolve(); } };
-        const onFrame = (now, meta) => {
+        let done = false, raf = 0, lastT = -1, busy = false, ended = false;
+        const finish = () => { if (!done) { done = true; cancelAnimationFrame(raf); resolve(); } };
+        const step = async () => {
           if (done) return;
-          ctx.fillStyle = color; ctx.fillRect(0, 0, W, H);
-          try { ctx.drawImage(v, 0, 0, W, H); } catch (e) {}
-          const ts = (meta && meta.mediaTime != null ? meta.mediaTime : n / 60) * 1e6;
-          enc.addFrame(canvas, ts, n % 120 === 0).then(() => {
-            n++;
-            if (v.ended) finish(); else v.requestVideoFrameCallback(onFrame);
-          }).catch(reject);
+          const t = v.currentTime;
+          if (!busy && t > lastT + 1e-4) {
+            lastT = t; busy = true;
+            ctx.fillStyle = color; ctx.fillRect(0, 0, W, H);
+            try { ctx.drawImage(v, 0, 0, W, H); } catch (e) {}
+            try { await enc.addFrame(canvas, t * 1e6, n % 120 === 0); n++; } catch (e) { return reject(e); }
+            busy = false;
+          }
+          if (ended && (v.currentTime >= (v.duration || 1e9) - 0.06)) finish();
+          else raf = requestAnimationFrame(step);
         };
-        v.onended = finish;
+        v.onended = () => { ended = true; };
         v.currentTime = 0;
-        v.requestVideoFrameCallback(onFrame);
-        v.play().catch(reject);
-        setTimeout(finish, ((v.duration || 16) + 3) * 1000);
+        v.play().then(() => { raf = requestAnimationFrame(step); }).catch(reject);
+        setTimeout(finish, ((v.duration || 16) + 5) * 1000);
       });
-      if (n < 2) throw new Error("sin frames");
+      if (window.__mkDbg) window.__mkDbg.n = n;
+      if (n < 2) throw new Error("sin frames:" + n);
       const blob = await enc.finish();
       if (blob.size < 1000) throw new Error("mp4 vacío");
       saveBlob(blob, nameBase + ".mp4");
       return true;
     } catch (e) {
+      if (window.__mkDbg) window.__mkDbg.err = String(e && e.message || e);
       try { await enc.finish(); } catch (e2) {}
       return false;
     }
