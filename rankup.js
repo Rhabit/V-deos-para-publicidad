@@ -26,6 +26,8 @@
   const SX = PX + 16, SY = PY + 16, SW = PW - 32, SH = PH - 32, SR = PR - 16;
 
   const emblem = new Image(); emblem.src = "assets/rank-silver.png";
+  const thumbCurl = new Image(); thumbCurl.src = "assets/ex-curl.png";
+  const thumbBench = new Image(); thumbBench.src = "assets/ex-bench.png";
   const langNow = () => { const on = document.querySelector("#mk-lang button.on"); return on && on.dataset.lang === "en" ? "en" : "es"; };
   const poseNow = () => { const on = document.querySelector("#mk-pose button.on"); return on && on.dataset.pose === "flat" ? "flat" : "iso"; };
 
@@ -93,17 +95,24 @@
 
   // ---------- Escena 1: registro de series (dos ejercicios) ----------
   const PRESS_T = 2.0;
-  function drawCard(x, y, w, name, rows, t) {
+  function drawCard(x, y, w, name, rows, t, thumb) {
     const headH = 118, colH = 54, rowH = 92, pad = 22;
     const cardH = headH + colH + rowH * rows.length + 74 + pad;
     roundRect(x, y, w, cardH, 32);
     ctx.fillStyle = "rgba(255,255,255,0.025)"; ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
 
-    const thumbR = 40, thumbX = x + 40 + thumbR, thumbY = y + 36 + thumbR;
-    ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.fillStyle = "rgba(255,122,26,0.08)"; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.45)"; ctx.stroke();
-    dumbbell(thumbX, thumbY, 42, C.accent);
+    const thumbR = 42, thumbX = x + 40 + thumbR, thumbY = y + 34 + thumbR;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.clip();
+    ctx.fillStyle = C.surfaceAlt; ctx.fillRect(thumbX - thumbR, thumbY - thumbR, thumbR * 2, thumbR * 2);
+    if (thumb && thumb.complete && thumb.naturalWidth) {
+      const iar = thumb.naturalWidth / thumb.naturalHeight, d = thumbR * 2;
+      let dw, dh; if (iar > 1) { dh = d; dw = d * iar; } else { dw = d; dh = d / iar; }
+      ctx.drawImage(thumb, thumbX - dw / 2, thumbY - dh / 2, dw, dh);
+    }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.4)"; ctx.stroke();
     ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `800 42px ${FONT}`;
     ctx.fillText(name, thumbX + thumbR + 28, thumbY + 14);
     ctx.textAlign = "center"; ctx.fillStyle = C.textDim; ctx.font = `800 38px ${FONT}`;
@@ -220,8 +229,8 @@
     // Dos tarjetas de ejercicio
     const cardX = SX + 24, cardW = SW - 48;
     let y = sbY + 112;
-    y += drawCard(cardX, y, cardW, L.ex1, ex1Rows, t) + 22;
-    drawCard(cardX, y, cardW, L.ex2, ex2Rows, t);
+    y += drawCard(cardX, y, cardW, L.ex1, ex1Rows, t, thumbCurl) + 22;
+    drawCard(cardX, y, cardW, L.ex2, ex2Rows, t, thumbBench);
   }
 
   function drawFlash(a) { a = clamp01(a); if (a <= 0) return; ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = "#fff"; ctx.fillRect(SX, SY, SW, SH); ctx.restore(); }
@@ -337,15 +346,15 @@
   }
 
   // ---------- Vuelco: plano o isométrico ----------
+  // Inclinación medida del clip real "Registra cada serie": lean suave (cizalla
+  // horizontal ~-0.042, top hacia la derecha) + ligera reducción, casi rectangular.
   function blitIso(src) {
     const cx = W / 2, cy = H / 2;
     ctx.save();
-    ctx.translate(cx, cy); ctx.rotate(-0.055); ctx.translate(-cx, -cy);
-    const N = 150, sL = 1.06, sR = 0.80, ov = 0.9, colW = src.width / N;
-    const sarr = [], widths = []; let tot = 0;
-    for (let i = 0; i < N; i++) { const u = (i + 0.5) / N; const s = (sL + (sR - sL) * u) * ov; sarr.push(s); const w = colW * s; widths.push(w); tot += w; }
-    let dx = cx - tot / 2;
-    for (let i = 0; i < N; i++) { const s = sarr[i], dh = src.height * s; ctx.drawImage(src, i * colW, 0, colW, src.height, dx, cy - dh / 2, widths[i] + 0.7, dh); dx += widths[i]; }
+    ctx.translate(cx, cy);
+    ctx.transform(0.97, 0, -0.042, 0.95, 0, 0);
+    ctx.translate(-cx, -cy);
+    ctx.drawImage(src, 6, 0);
     ctx.restore();
   }
   function render(t) {
@@ -379,12 +388,12 @@
     a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(u), 8000);
   }
-  async function ensureEmblem() {
-    if (emblem.complete && emblem.naturalWidth) return;
-    await new Promise((res) => { emblem.onload = res; emblem.onerror = res; setTimeout(res, 3000); });
+  function waitImg(img) {
+    if (img.complete && img.naturalWidth) return Promise.resolve();
+    return new Promise((res) => { img.onload = res; img.onerror = res; setTimeout(res, 3000); });
   }
   window.__rankupDownload = async function () {
-    await ensureEmblem();
+    await Promise.all([emblem, thumbCurl, thumbBench].map(waitImg));
     if (window.mp4Support && window.mp4Support()) {
       const enc = await window.makeMp4Encoder(W, H, 30, 12000000);
       if (enc) {
