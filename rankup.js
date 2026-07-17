@@ -304,55 +304,81 @@
     rg.addColorStop(0, `rgba(255,150,60,${0.26 + 0.1 * pulse})`); rg.addColorStop(0.42, "rgba(180,90,30,0.14)"); rg.addColorStop(1, "rgba(10,7,5,0)");
     ctx.fillStyle = rg; ctx.fillRect(SX, SY, SW, SH);
 
-    const app = clamp01((rt - 0.15) / 0.9);
-    const emAlpha = clamp01((rt - 0.15) / 0.45);
-    const sc = app <= 0 ? 0 : easeOutBack(app);
+    // Entrada épica: el emblema baja desde arriba haciendo un "slam" (zoom de 1.6→1),
+    // con impacto (destello + temblor), haz de luz y estela.
+    const landT = 0.85;
+    const p = clamp01(rt / landT);
+    const emAlpha = clamp01(rt / 0.3);
+    let sc, yOff;
+    if (rt <= landT) { sc = 1.65 - 0.65 * easeOut(p); yOff = (1 - easeOut(p)) * -220; }
+    else { const b = clamp01((rt - landT) / 0.45); sc = 1 + 0.07 * Math.sin(b * Math.PI); yOff = 0; }
 
-    drawRays(rt, cx, cy, 0.45 * emAlpha + 0.12 * pulse);
+    // Temblor de impacto (decae en 0.35 s)
+    const shake = (rt > landT && rt < landT + 0.35) ? (1 - (rt - landT) / 0.35) * 18 : 0;
+    const shx = shake * Math.sin(rt * 82), shy = shake * Math.cos(rt * 63);
+
+    // Haz de luz vertical detrás del emblema
+    const beamA = clamp01((rt - 0.1) / 0.35) * (rt < landT + 0.6 ? 1 : clamp01(1 - (rt - (landT + 0.6)) / 0.7));
+    if (beamA > 0.01) {
+      const bw = 140 * (rt < landT ? 0.5 + 0.5 * (rt / landT) : 1) + 40 * pulse;
+      ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = beamA * 0.55;
+      const bg3 = ctx.createLinearGradient(cx - bw, 0, cx + bw, 0);
+      bg3.addColorStop(0, "rgba(255,205,135,0)"); bg3.addColorStop(0.5, "rgba(255,225,165,0.75)"); bg3.addColorStop(1, "rgba(255,205,135,0)");
+      ctx.fillStyle = bg3; ctx.fillRect(cx - bw, SY, bw * 2, SH); ctx.restore();
+    }
+
+    // Rayos (estallan al aterrizar)
+    const rayFlare = rt > landT - 0.1 && rt < landT + 0.4 ? 0.5 * (1 - Math.abs(rt - landT) / 0.4) : 0;
+    ctx.save(); ctx.translate(shx, shy);
+    drawRays(rt, cx, cy, 0.45 * emAlpha + 0.12 * pulse + rayFlare);
+    ctx.restore();
 
     if (emAlpha > 0) {
-      const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, 440 * Math.max(0.3, sc));
-      gr.addColorStop(0, `rgba(255,200,140,${0.5 * emAlpha})`); gr.addColorStop(0.5, `rgba(255,140,50,${0.22 * emAlpha})`); gr.addColorStop(1, "rgba(0,0,0,0)");
+      const gr = ctx.createRadialGradient(cx, cy + yOff, 0, cx, cy + yOff, 460 * Math.max(0.4, sc));
+      gr.addColorStop(0, `rgba(255,205,145,${0.55 * emAlpha})`); gr.addColorStop(0.5, `rgba(255,140,50,${0.24 * emAlpha})`); gr.addColorStop(1, "rgba(0,0,0,0)");
       ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.fillStyle = gr; ctx.fillRect(SX, SY, SW, SH); ctx.restore();
     }
 
-    const landT = 0.9;
+    // Anillo de choque
     if (rt > landT) {
-      const k = (rt - landT) / 0.6;
+      const k = (rt - landT) / 0.55;
       if (k < 1) {
-        ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = (1 - k) * 0.6;
-        ctx.lineWidth = 8 * (1 - k) + 2; ctx.strokeStyle = "rgba(255,210,150,1)";
-        ctx.beginPath(); ctx.arc(cx, cy, 160 + k * 430, 0, 7); ctx.stroke(); ctx.restore();
+        ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = (1 - k) * 0.7;
+        ctx.lineWidth = 12 * (1 - k) + 2; ctx.strokeStyle = "rgba(255,225,175,1)";
+        ctx.beginPath(); ctx.arc(cx, cy, 150 + k * 470, 0, 7); ctx.stroke(); ctx.restore();
       }
     }
 
+    // Emblema
     const ar = (emblem.naturalWidth && emblem.naturalHeight) ? emblem.naturalWidth / emblem.naturalHeight : 0.95;
-    const ew = 480 * sc, eh = ew / ar;
+    const ew = 470 * sc, eh = ew / ar, ey = cy + yOff;
     if (sc > 0.02 && emblem.complete && emblem.naturalWidth) {
       const ow = Math.round(ew), oh = Math.round(eh);
       const off = drawRankUp._off || (drawRankUp._off = document.createElement("canvas"));
       off.width = ow; off.height = oh;
       const octx = off.getContext("2d");
       octx.clearRect(0, 0, ow, oh); octx.drawImage(emblem, 0, 0, ow, oh);
-      if (rt > landT + 0.2) {
-        const sweep = ((rt - (landT + 0.2)) % 2.4) / 2.4;
+      if (rt > landT + 0.15) {
+        const sweep = ((rt - (landT + 0.15)) % 2.4) / 2.4;
         octx.save(); octx.globalCompositeOperation = "source-atop";
         const gxp = -ow * 0.35 + sweep * (ow * 1.7);
         const lg = octx.createLinearGradient(gxp - 110, 0, gxp + 110, 0);
-        lg.addColorStop(0, "rgba(255,240,220,0)"); lg.addColorStop(0.5, "rgba(255,240,220,0.55)"); lg.addColorStop(1, "rgba(255,240,220,0)");
+        lg.addColorStop(0, "rgba(255,240,220,0)"); lg.addColorStop(0.5, "rgba(255,240,220,0.6)"); lg.addColorStop(1, "rgba(255,240,220,0)");
         octx.fillStyle = lg; octx.translate(ow / 2, oh / 2); octx.rotate(-0.32); octx.translate(-ow / 2, -oh / 2);
         octx.fillRect(-ow, -oh, ow * 3, oh * 3); octx.restore();
       }
-      ctx.save(); ctx.globalAlpha = emAlpha; ctx.drawImage(off, cx - ew / 2, cy - eh / 2, ew, eh); ctx.restore();
-    } else if (sc > 0.02 && emAlpha > 0) {
-      // Reserva mientras el emblema aún no ha cargado: escudo plateado.
-      ctx.save(); ctx.globalAlpha = emAlpha; ctx.translate(cx, cy); ctx.scale(sc, sc);
-      const g2 = ctx.createLinearGradient(0, -240, 0, 240);
-      g2.addColorStop(0, "#e8ebf2"); g2.addColorStop(0.5, "#9aa0b4"); g2.addColorStop(1, "#6b7183");
-      ctx.fillStyle = g2; ctx.strokeStyle = "#cfd3de"; ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.moveTo(-170, -230); ctx.lineTo(170, -230); ctx.lineTo(170, 120); ctx.lineTo(0, 250); ctx.lineTo(-170, 120); ctx.closePath();
-      ctx.fill(); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.globalAlpha = emAlpha; ctx.translate(shx, shy); ctx.drawImage(off, cx - ew / 2, ey - eh / 2, ew, eh); ctx.restore();
+    }
+
+    // Destello de impacto (blanco cálido) justo al aterrizar
+    if (rt > landT - 0.03) {
+      const bk = clamp01((rt - (landT - 0.03)) / 0.3);
+      if (bk < 1) {
+        ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = 1 - bk;
+        const bb = ctx.createRadialGradient(cx, cy, 0, cx, cy, 120 + bk * 560);
+        bb.addColorStop(0, "rgba(255,248,225,0.95)"); bb.addColorStop(0.55, "rgba(255,205,130,0.4)"); bb.addColorStop(1, "rgba(255,185,95,0)");
+        ctx.fillStyle = bb; ctx.fillRect(SX, SY, SW, SH); ctx.restore();
+      }
     }
 
     drawSparks(rt, cx, cy, emAlpha);
