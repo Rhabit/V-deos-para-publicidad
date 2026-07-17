@@ -40,24 +40,28 @@
   const img = (src) => { const i = new Image(); i.src = src; if (i.decode) i.decode().catch(() => {}); return i; };
   const thumbCurl = img("assets/ex-curl.png"), thumbBench = img("assets/ex-bench.png");
   const thumbRow = img("assets/ex-row-poster.webp"), thumbLat = img("assets/ex-lateral-poster.webp");
-  const bodyIco = img("assets/musculo-cuerpo.png");
+  const thumbPull = img("assets/ex-pulldown-poster.webp");
+  const thumbOhp = img("assets/ex-ohp-poster.webp"), thumbFly = img("assets/ex-fly-poster.webp");
+  const thumbPullup = img("assets/ex-pullup-poster.png"), thumbSquat = img("assets/ex-squat-poster.webp"), thumbDead = img("assets/ex-deadlift-poster.webp");
+  const bodyIco = img("assets/musculo-cuerpo.png"), muscDorsales = img("assets/musc-dorsales.png"), muscBiceps = img("assets/musc-biceps.png");
   const exVid = document.createElement("video");
-  exVid.src = "assets/ex-lateral.mp4"; exVid.muted = true; exVid.loop = true; exVid.playsInline = true; exVid.preload = "auto";
+  exVid.src = "assets/ex-pulldown.mp4"; exVid.muted = true; exVid.loop = true; exVid.playsInline = true; exVid.preload = "auto";
   exVid.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;left:-9999px";
   document.body.appendChild(exVid);
 
-  // Ejercicios (grupo g para filtrar). El objetivo es "Elevaciones laterales".
+  // Ejercicios (grupo g: 0 Hombros,1 Pecho,2 Espalda,3 Brazo,4 Pierna).
+  // El objetivo (se inspecciona y se añade) es "Jalón en polea" (grupo Espalda).
   const DATA = [
-    { es: "Press militar", en: "Overhead press", g: 0, mp: ["hombros", "Hombros", "Shoulders"], ms: ["tríceps", "Tríceps", "Triceps"], eq: ["Barra", "Barbell"], th: null },
-    { es: "Elevaciones laterales", en: "Lateral raises", g: 0, mp: ["hombros", "Hombros", "Shoulders"], ms: ["trapecio", "Trapecio", "Traps"], eq: ["Mancuernas", "Dumbbells"], th: thumbLat, target: true, vid: true },
-    { es: "Face pull", en: "Face pull", g: 0, mp: ["hombros", "Hombros", "Shoulders"], ms: ["espalda alta", "Espalda alta", "Upper back"], eq: ["Polea", "Cable"], th: thumbRow },
+    { es: "Elevaciones laterales", en: "Lateral raises", g: 0, mp: ["hombros", "Hombros", "Shoulders"], ms: ["trapecio", "Trapecio", "Traps"], eq: ["Mancuernas", "Dumbbells"], th: thumbLat },
+    { es: "Press militar", en: "Overhead press", g: 0, mp: ["hombros", "Hombros", "Shoulders"], ms: ["tríceps", "Tríceps", "Triceps"], eq: ["Barra", "Barbell"], th: thumbOhp },
     { es: "Press de banca", en: "Bench press", g: 1, mp: ["pecho", "Pecho", "Chest"], ms: ["tríceps", "Tríceps", "Triceps"], eq: ["Barra", "Barbell"], th: thumbBench },
-    { es: "Aperturas", en: "Chest fly", g: 1, mp: ["pecho", "Pecho", "Chest"], ms: ["hombros", "Hombros", "Shoulders"], eq: ["Polea", "Cable"], th: null },
+    { es: "Aperturas", en: "Chest fly", g: 1, mp: ["pecho", "Pecho", "Chest"], ms: ["hombros", "Hombros", "Shoulders"], eq: ["Polea", "Cable"], th: thumbFly },
+    { es: "Jalón en polea", en: "Cable pulldown", g: 2, mp: ["dorsales", "Dorsales", "Lats"], ms: ["bíceps", "Bíceps", "Biceps"], eq: ["Polea", "Cable"], th: thumbPull, target: true, vid: true },
     { es: "Remo con polea", en: "Cable row", g: 2, mp: ["espalda alta", "Espalda alta", "Upper back"], ms: ["bíceps", "Bíceps", "Biceps"], eq: ["Polea", "Cable"], th: thumbRow },
-    { es: "Dominadas", en: "Pull-ups", g: 2, mp: ["dorsales", "Dorsales", "Lats"], ms: ["bíceps", "Bíceps", "Biceps"], eq: ["Peso corporal", "Bodyweight"], th: null },
+    { es: "Dominadas", en: "Pull-ups", g: 2, mp: ["dorsales", "Dorsales", "Lats"], ms: ["bíceps", "Bíceps", "Biceps"], eq: ["Peso corporal", "Bodyweight"], th: thumbPullup },
     { es: "Curl de bíceps", en: "Biceps curl", g: 3, mp: ["bíceps", "Bíceps", "Biceps"], ms: ["antebrazos", "Antebrazos", "Forearms"], eq: ["Mancuernas", "Dumbbells"], th: thumbCurl },
-    { es: "Sentadilla", en: "Squat", g: 4, mp: ["cuádriceps", "Cuádriceps", "Quads"], ms: ["glúteos", "Glúteos", "Glutes"], eq: ["Barra", "Barbell"], th: null },
-    { es: "Peso muerto", en: "Deadlift", g: 4, mp: ["isquios", "Isquios", "Hamstrings"], ms: ["glúteos", "Glúteos", "Glutes"], eq: ["Barra", "Barbell"], th: null },
+    { es: "Sentadilla", en: "Squat", g: 4, mp: ["cuádriceps", "Cuádriceps", "Quads"], ms: ["glúteos", "Glúteos", "Glutes"], eq: ["Barra", "Barbell"], th: thumbSquat },
+    { es: "Peso muerto", en: "Deadlift", g: 4, mp: ["isquios", "Isquios", "Hamstrings"], ms: ["glúteos", "Glúteos", "Glutes"], eq: ["Barra", "Barbell"], th: thumbDead },
   ];
   const exName = (e) => EN() ? e.en : e.es;
   const exMeta = (e) => `${e.mp[EN() ? 2 : 1]} · ${e.ms[EN() ? 2 : 1]} · ${e.eq[EN() ? 1 : 0]}`;
@@ -132,7 +136,7 @@
     ctx.fillStyle = C.textDim; roundRect(btx + 4, bty + 4, (bw - 8) * 0.7, bh - 8, 3); ctx.fill();
   }
   function statsBar(nSets, vol, nMusc) {
-    const sbY = SY + 150, l = L();
+    const sbY = SY + 206, l = L();
     const cols = [[l.time, "12:04"], [l.vol, String(vol)], [l.sets, String(nSets)], [l.musc, String(nMusc)]];
     const gx0 = SX + 26, gw = SW - 52, cw = gw / 4;
     ctx.textAlign = "center";
@@ -187,9 +191,9 @@
   function drawGym(added) {
     statusBar();
     statsBar(added > 0 ? 6 : 3, added > 0 ? 496 : 376, added > 0 ? 3 : 2);
-    const cardX = SX + 24, cardW = SW - 48; let y = SY + 262;
+    const cardX = SX + 24, cardW = SW - 48; let y = SY + 318;
     y += exerciseCard(cardX, y, cardW, EN() ? "Biceps curl" : "Curl de bíceps", thumbCurl, [{ p: "10×12", k: "12", r: "12" }, { p: "12×10", k: "12", r: "10" }, { p: "12×9", k: "14", r: "8" }], 1) + 22;
-    if (added > 0) y += exerciseCard(cardX, y, cardW, EN() ? "Lateral raises" : "Elevaciones laterales", thumbLat, [{ p: "9×15", k: "10", r: "15" }, { p: "10×12", k: "10", r: "12" }, { p: "10×12", k: "12", r: "10" }], clamp01(added)) + 22;
+    if (added > 0) y += exerciseCard(cardX, y, cardW, EN() ? "Cable pulldown" : "Jalón en polea", thumbPull, [{ p: "45×12", k: "50", r: "12" }, { p: "50×10", k: "55", r: "10" }, { p: "55×8", k: "60", r: "8" }], clamp01(added)) + 22;
     return y;
   }
 
@@ -218,7 +222,7 @@
       if (on) { ctx.fillStyle = "rgba(255,122,26,0.18)"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.accent; ctx.stroke(); ctx.fillStyle = C.accent; }
       else { ctx.fillStyle = C.bg; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke(); ctx.fillStyle = C.textDim; }
       ctx.textAlign = "center"; ctx.fillText(f, chx + cw / 2, chY + 41);
-      if (i === 1) filterTapPos = [chx + cw / 2, chY + chH / 2];
+      if (i === 3) filterTapPos = [chx + cw / 2, chY + chH / 2];
       chx += cw + 14;
     });
     // lista (filtrada) con recorte
@@ -248,7 +252,7 @@
 
   // ---------- Detalle ----------
   function drawDetail(prog, addPress) {
-    const topY = SY + 90, l = L(), ex = DATA[1];
+    const topY = SY + 90, l = L(), ex = DATA.find((e) => e.target) || DATA[0];
     ctx.save(); ctx.globalAlpha = Math.min(1, prog * 1.5); ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(SX, SY, SW, SH); ctx.restore();
     const off = (1 - easeOut(prog)) * (SY + SH - topY);
     ctx.save(); ctx.translate(0, off);
@@ -256,7 +260,7 @@
     ctx.fillStyle = C.border; roundRect(540 - 34, topY + 16, 68, 8, 4); ctx.fill();
 
     // Cabecera: animación con degradado + nombre/músculo superpuestos
-    const aX = SX, aW = SW, aY = topY + 34, aH = 520;
+    const aX = SX, aW = SW, aY = topY + 34, aH = 468;
     ctx.save(); roundRect(aX + 4, aY, aW - 8, aH, 30); ctx.clip(); ctx.fillStyle = "#000"; ctx.fillRect(aX, aY, aW, aH);
     if (exVid.readyState >= 2) { const vr = (exVid.videoWidth / exVid.videoHeight) || 1.33, br = aW / aH; let dw, dh; if (vr > br) { dh = aH; dw = aH * vr; } else { dw = aW; dh = aW / vr; } try { ctx.drawImage(exVid, aX + (aW - dw) / 2, aY + (aH - dh) / 2, dw, dh); } catch (e) {} }
     else if (thumbLat.complete) { ctx.drawImage(thumbLat, aX, aY - 40, aW, aH + 80); }
@@ -279,18 +283,35 @@
       ctx.fillStyle = C.textDim; ctx.font = `600 22px ${FONT}`; ctx.fillText(p[1], px + 66, py + 42);
       ctx.fillStyle = C.text; ctx.font = `800 42px ${FONT}`; ctx.fillText(p[2], px + 26, py + 92);
     });
-    y += chH * 2 + 16 + 44;
-    // Músculos trabajados: chips principal/secundario
-    ctx.fillStyle = C.textDim; ctx.font = `700 24px ${FONT}`; spaced(l.affected, SX + 40, y, 1); y += 24;
-    const chips = [[ex.mp[EN() ? 2 : 1], true], [ex.ms[EN() ? 2 : 1], false]]; let cx = SX + 34;
-    chips.forEach(([m, prim]) => {
-      ctx.font = `700 30px ${FONT}`; const tw = ctx.measureText(m).width, w2 = tw + 90;
-      roundRect(cx, y, w2, 64, 32);
+    y += chH * 2 + 16 + 46;
+    // Músculos trabajados: tarjeta con figura del cuerpo (resaltada) + chips
+    ctx.fillStyle = C.textDim; ctx.font = `700 24px ${FONT}`; spaced(l.affected, SX + 40, y, 1); y += 40;
+    const mcX = SX + 34, mcW = SW - 68, mcH = 300;
+    roundRect(mcX, y, mcW, mcH, 24); ctx.fillStyle = C.bg; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+    // Figura de músculos (cuerpo + capas resaltadas)
+    const figW = 300, figH = mcH - 44, figX = mcX + 22, figY = y + 22;
+    ctx.save(); roundRect(figX, figY, figW, figH, 16); ctx.clip();
+    ctx.fillStyle = "#0d0b09"; ctx.fillRect(figX, figY, figW, figH);
+    if (bodyIco.complete && bodyIco.naturalWidth) {
+      const ar = bodyIco.naturalWidth / bodyIco.naturalHeight; let dw = figW, dh = figW / ar; if (dh < figH) { dh = figH; dw = figH * ar; }
+      const ix = figX + (figW - dw) / 2, iy = figY + (figH - dh) / 2;
+      ctx.globalAlpha = 0.85; ctx.drawImage(bodyIco, ix, iy, dw, dh); ctx.globalAlpha = 1;
+      if (muscDorsales.complete && muscDorsales.naturalWidth) ctx.drawImage(muscDorsales, ix, iy, dw, dh);
+      if (muscBiceps.complete && muscBiceps.naturalWidth) { ctx.globalAlpha = 0.75; ctx.drawImage(muscBiceps, ix, iy, dw, dh); ctx.globalAlpha = 1; }
+    }
+    ctx.restore();
+    ctx.lineWidth = 2; ctx.strokeStyle = C.border; roundRect(figX, figY, figW, figH, 16); ctx.stroke();
+    // Chips principal/secundario a la derecha
+    const chX = figX + figW + 34; let chy = y + 44;
+    [[l.primary, ex.mp[EN() ? 2 : 1], true], [l.secondary, ex.ms[EN() ? 2 : 1], false]].forEach(([lab, m, prim]) => {
+      ctx.fillStyle = C.textDim; ctx.font = `700 21px ${FONT}`; ctx.textAlign = "left"; spaced(lab, chX, chy, 1);
+      ctx.font = `700 34px ${FONT}`; const tw = ctx.measureText(m).width, w2 = tw + 78;
+      roundRect(chX, chy + 18, w2, 68, 34);
       if (prim) { ctx.fillStyle = "rgba(255,122,26,0.16)"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.5)"; ctx.stroke(); }
-      else { ctx.fillStyle = C.bg; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke(); }
-      ctx.beginPath(); ctx.arc(cx + 34, y + 32, 9, 0, 7); ctx.fillStyle = prim ? C.accent : C.textDim; ctx.fill();
-      ctx.fillStyle = prim ? C.accent : C.textDim; ctx.textAlign = "left"; ctx.fillText(m, cx + 56, y + 42);
-      cx += w2 + 16;
+      else { ctx.fillStyle = C.surfaceAlt; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(chX + 34, chy + 18 + 34, 9, 0, 7); ctx.fillStyle = prim ? C.accent : C.textDim; ctx.fill();
+      ctx.fillStyle = prim ? C.accent : C.textDim; ctx.textAlign = "left"; ctx.fillText(m, chX + 56, chy + 18 + 46);
+      chy += 118;
     });
     // Botón Agregar (aura)
     const bY = SY + SH - 122, bX = SX + 40, bW = SW - 80, bHh = 96;
@@ -308,7 +329,7 @@
   function scene(t) {
     _perf = t;
     if (t < 2.0) {
-      const btnY = SY + 262 + (118 + 54 + 92 * 3 + 20) + 22;
+      const btnY = SY + 318 + (118 + 54 + 92 * 3 + 20) + 22;
       drawGym(0);
       const press = t > 1.35 ? clamp01((t - 1.35) / 0.16) * clamp01((1.75 - t) / 0.35) : 0;
       addExBtn(SX + 24, btnY, SW - 48, t > 1.35 ? clamp01((t - 1.35) / 0.16) : 0);
@@ -317,7 +338,7 @@
     } else if (t < 3.8) {
       drawGym(0);
       const prog = clamp01((t - 2.0) / 0.4);
-      const filterIdx = t > 3.05 ? 1 : 0;
+      const filterIdx = t > 3.05 ? 3 : 0;
       const listFade = t < 3.0 ? 1 : (t < 3.2 ? clamp01((t - 3.0) / 0.1) < 0.5 ? 1 - clamp01((t - 3.0) / 0.1) * 2 : (clamp01((t - 3.0) / 0.1) - 0.5) * 2 : 1);
       const lf = t > 3.0 && t < 3.22 ? Math.abs((t - 3.11) / 0.11) : 1; // dip al cambiar filtro
       const info = drawSelector(prog, filterIdx, Math.max(0.15, lf), null);
@@ -325,11 +346,11 @@
       if (info.filterTap) { const cp = clamp01((t - 2.5) / 0.55), sx0 = 540, sy0 = SY + SH * 0.82; finger(sx0 + (info.filterTap[0] - sx0) * easeInOut(cp), sy0 + (info.filterTap[1] - sy0) * easeInOut(cp), press); }
     } else if (t < 5.0) {
       drawGym(0);
-      const info = drawSelector(1, 1, 1, null);
+      const info = drawSelector(1, 3, 1, null);
       const press = t > 4.35 ? clamp01((t - 4.35) / 0.14) * clamp01((4.7 - t) / 0.3) : 0;
       if (info.eyeTap) { const cp = clamp01((t - 3.9) / 0.5), sx0 = 540, sy0 = SY + SH * 0.6; finger(sx0 + (info.eyeTap[0] - sx0) * easeInOut(cp), sy0 + (info.eyeTap[1] - sy0) * easeInOut(cp), press); }
     } else if (t < 8.4) {
-      drawGym(0); drawSelector(1, 1, 1, null);
+      drawGym(0); drawSelector(1, 3, 1, null);
       const prog = t < 7.9 ? clamp01((t - 5.0) / 0.4) : clamp01((8.4 - t) / 0.4);
       const addP = t > 7.1 ? clamp01((t - 7.1) / 0.14) * clamp01((7.5 - t) / 0.3) : 0;
       const addPos = drawDetail(prog, addP);

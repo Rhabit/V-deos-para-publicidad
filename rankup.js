@@ -228,7 +228,7 @@
     const nDone = allRows.filter((s) => s.done).length;
 
     // Barra de stats
-    const sbY = SY + 156;
+    const sbY = SY + 206;
     const cols = [
       { label: L.time, value: "12:04", clock: true },
       { label: L.vol, value: String(Math.round(vol)) },
