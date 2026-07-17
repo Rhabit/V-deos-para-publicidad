@@ -105,6 +105,17 @@
       </div>
     </article>
 
+    <article class="clip clip--lock" data-base="stats" data-name="rhabit-estadisticas">
+      <div class="clip__video">
+        <canvas id="stats-canvas" class="lock-canvas"></canvas>
+      </div>
+      <div class="clip__meta">
+        <span class="pill"><svg class="ico"><use href="#i-dumbbell"/></svg> Progreso</span>
+        <h2>De principiante a avanzado</h2>
+        <button class="mk-btn mk-btn--primary" data-dl type="button"><svg class="ico"><use href="#i-download"/></svg> Descargar vídeo</button>
+      </div>
+    </article>
+
     <article class="clip" data-base="exercise" data-name="rhabit-entreno-guiado">
       <div class="clip__video">
         <video loop muted playsinline preload="auto"></video>
@@ -189,6 +200,7 @@
   <script src="lockscreen.js"></script>
   <script src="rankup.js"></script>
   <script src="addexercise.js"></script>
+  <script src="stats.js"></script>
   <script>
     // Oculta la pantalla de carga cuando la página está totalmente cargada.
     (function () {

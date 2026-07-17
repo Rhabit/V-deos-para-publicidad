@@ -64,6 +64,7 @@
     lock:     { pill: { es: "Notificaciones", en: "Notifications" }, title: { es: "Pantalla de bloqueo", en: "Lock screen" } },
     rankup:   { pill: { es: "Entrenos", en: "Workouts" },          title: { es: "Subida de rango épica", en: "Epic rank up" } },
     addex:    { pill: { es: "Entrenos", en: "Workouts" },          title: { es: "Añadir ejercicio", en: "Add exercise" } },
+    stats:    { pill: { es: "Progreso", en: "Progress" },          title: { es: "De principiante a avanzado", en: "From beginner to advanced" } },
     exercise: { pill: { es: "Entrenos", en: "Workouts" },        title: { es: "Entrena con guía visual", en: "Train with visual guidance" } },
     calendar: { pill: { es: "Organización", en: "Organization" }, title: { es: "Tu mes entero de un vistazo", en: "Your whole month at a glance" } },
     filter:   { pill: { es: "Organización", en: "Organization" }, title: { es: "Filtra el mes por hábito", en: "Filter the month by habit" } },
@@ -125,6 +126,8 @@
         if (window.__rankupDownload) await window.__rankupDownload();
       } else if (clip.dataset.base === "addex") {
         if (window.__addexDownload) await window.__addexDownload();
+      } else if (clip.dataset.base === "stats") {
+        if (window.__statsDownload) await window.__statsDownload();
       } else if (serverOk && lang === "es") {
         try { await serverDownload(clip); }
         catch (e) { await clientDownload(clip); }
