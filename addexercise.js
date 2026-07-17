@@ -95,6 +95,33 @@
     ctx.restore();
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = dumb ? "rgba(255,122,26,0.4)" : C.border; ctx.stroke();
   }
+  // Iconos de línea (estilo lucide, como la app real — sin emojis)
+  function strokeSet(col, w) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.fillStyle = "none"; }
+  function icoTrophy(cx, cy, s, col) {
+    ctx.save(); strokeSet(col, s * 0.15);
+    ctx.beginPath(); ctx.moveTo(cx - s * 0.5, cy - s * 0.6); ctx.lineTo(cx + s * 0.5, cy - s * 0.6); ctx.lineTo(cx + s * 0.36, cy + s * 0.05); ctx.lineTo(cx - s * 0.36, cy + s * 0.05); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - s * 0.5, cy - s * 0.5); ctx.quadraticCurveTo(cx - s * 0.86, cy - s * 0.28, cx - s * 0.5, cy - s * 0.06); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + s * 0.5, cy - s * 0.5); ctx.quadraticCurveTo(cx + s * 0.86, cy - s * 0.28, cx + s * 0.5, cy - s * 0.06); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy + s * 0.05); ctx.lineTo(cx, cy + s * 0.4); ctx.moveTo(cx - s * 0.34, cy + s * 0.58); ctx.lineTo(cx + s * 0.34, cy + s * 0.58); ctx.stroke();
+    ctx.restore();
+  }
+  function icoBars(cx, cy, s, col) {
+    ctx.save(); strokeSet(col, s * 0.15);
+    [[-0.5, 0.15], [0, 0.45], [0.5, 0.75]].forEach(([dx, hh]) => { ctx.beginPath(); ctx.moveTo(cx + dx * s, cy + s * 0.6); ctx.lineTo(cx + dx * s, cy + s * 0.6 - hh * s * 2); ctx.stroke(); });
+    ctx.restore();
+  }
+  function icoClock(cx, cy, s, col) {
+    ctx.save(); strokeSet(col, s * 0.13);
+    ctx.beginPath(); ctx.arc(cx, cy, s * 0.62, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - s * 0.36); ctx.moveTo(cx, cy); ctx.lineTo(cx + s * 0.28, cy); ctx.stroke();
+    ctx.restore();
+  }
+  function icoDoc(cx, cy, s, col) {
+    ctx.save(); strokeSet(col, s * 0.13);
+    ctx.beginPath(); ctx.moveTo(cx - s * 0.42, cy - s * 0.6); ctx.lineTo(cx + s * 0.24, cy - s * 0.6); ctx.lineTo(cx + s * 0.42, cy - s * 0.42); ctx.lineTo(cx + s * 0.42, cy + s * 0.6); ctx.lineTo(cx - s * 0.42, cy + s * 0.6); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - s * 0.22, cy - s * 0.1); ctx.lineTo(cx + s * 0.22, cy - s * 0.1); ctx.moveTo(cx - s * 0.22, cy + s * 0.18); ctx.lineTo(cx + s * 0.22, cy + s * 0.18); ctx.stroke();
+    ctx.restore();
+  }
   function eyeIcon(cx, cy, s, color) {
     ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = s * 0.13; ctx.lineCap = "round";
     ctx.beginPath(); ctx.moveTo(cx - s * 0.62, cy); ctx.quadraticCurveTo(cx, cy - s * 0.58, cx + s * 0.62, cy); ctx.quadraticCurveTo(cx, cy + s * 0.58, cx - s * 0.62, cy); ctx.closePath(); ctx.stroke();
@@ -270,22 +297,23 @@
     ctx.fillStyle = C.accent; ctx.font = `600 28px ${FONT}`; ctx.fillText(exMeta(ex), aX + 40, aY + aH - 28);
     ctx.restore();
 
-    let y = aY + aH + 46;
-    // Récords personales (grid 2x2)
-    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `700 24px ${FONT}`; spaced(l.records, SX + 40, y, 1);
-    y += 24;
-    const prs = [["🏆", l.best, "14 kg"], ["📈", l.rm, "17.5 kg"], ["⏱", l.volT, "1.9k kg"], ["📄", l.volS, "180 kg"]];
-    const gpX = SX + 34, gpW = SW - 68, cw = (gpW - 16) / 2, chH = 118;
+    let y = aY + aH + 58;
+    // Récords personales — tarjetas verticales con caja de icono (como la app)
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.records, SX + 40, y, 1);
+    y += 46;
+    const prs = [[icoTrophy, l.best, "14 kg"], [icoBars, l.rm, "17.5 kg"], [icoClock, l.volT, "1.9k kg"], [icoDoc, l.volS, "180 kg"]];
+    const gpX = SX + 34, gpW = SW - 68, gap = 24, cw = (gpW - gap) / 2, chH = 172;
     prs.forEach((p, i) => {
-      const px = gpX + (i % 2) * (cw + 16), py = y + Math.floor(i / 2) * (chH + 16);
-      roundRect(px, py, cw, chH, 20); ctx.fillStyle = C.bg; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
-      ctx.textAlign = "left"; ctx.font = `700 30px ${FONT}`; ctx.fillStyle = C.accent; ctx.fillText(p[0], px + 26, py + 44);
-      ctx.fillStyle = C.textDim; ctx.font = `600 22px ${FONT}`; ctx.fillText(p[1], px + 66, py + 42);
-      ctx.fillStyle = C.text; ctx.font = `800 42px ${FONT}`; ctx.fillText(p[2], px + 26, py + 92);
+      const px = gpX + (i % 2) * (cw + gap), py = y + Math.floor(i / 2) * (chH + gap);
+      roundRect(px, py, cw, chH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+      roundRect(px + 28, py + 28, 62, 62, 16); ctx.fillStyle = "rgba(255,122,26,0.10)"; ctx.fill();
+      p[0](px + 59, py + 59, 30, C.accent);
+      ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `500 25px ${FONT}`; ctx.fillText(p[1], px + 28, py + 124);
+      ctx.fillStyle = C.text; ctx.font = `800 44px ${FONT}`; ctx.fillText(p[2], px + 28, py + 166);
     });
-    y += chH * 2 + 16 + 46;
+    y += chH * 2 + gap + 56;
     // Músculos trabajados: tarjeta con figura del cuerpo (resaltada) + chips
-    ctx.fillStyle = C.textDim; ctx.font = `700 24px ${FONT}`; spaced(l.affected, SX + 40, y, 1); y += 40;
+    ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.affected, SX + 40, y, 1); y += 42;
     const mcX = SX + 34, mcW = SW - 68, mcH = 300;
     roundRect(mcX, y, mcW, mcH, 24); ctx.fillStyle = C.bg; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
     // Figura de músculos (cuerpo + capas resaltadas)
