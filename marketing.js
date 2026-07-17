@@ -54,7 +54,7 @@
   };
   const CLIP_TX = {
     lock:     { pill: { es: "Notificaciones", en: "Notifications" }, title: { es: "Pantalla de bloqueo", en: "Lock screen" } },
-    rankup:   { pill: { es: "Entrenos", en: "Workouts" },          title: { es: "Registra cada serie · subida de rango", en: "Log every set · rank up" } },
+    rankup:   { pill: { es: "Entrenos", en: "Workouts" },          title: { es: "Subida de rango épica", en: "Epic rank up" } },
     exercise: { pill: { es: "Entrenos", en: "Workouts" },        title: { es: "Entrena con guía visual", en: "Train with visual guidance" } },
     calendar: { pill: { es: "Organización", en: "Organization" }, title: { es: "Tu mes entero de un vistazo", en: "Your whole month at a glance" } },
     filter:   { pill: { es: "Organización", en: "Organization" }, title: { es: "Filtra el mes por hábito", en: "Filter the month by habit" } },
