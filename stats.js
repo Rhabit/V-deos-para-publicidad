@@ -86,12 +86,12 @@
     ctx.fillStyle = C.textDim; ctx.font = `500 26px ${FONT}`; ctx.fillText(l.sub, SX + 40, SY + 198);
 
     // ── Gráfica lineal (constancia sube) ──
-    const gcY = SY + 236, gcH = 336, gcX = SX + 40, gcW = SW - 80;
+    const gcY = SY + 230, gcH = 310, gcX = SX + 40, gcW = SW - 80;
     roundRect(gcX, gcY, gcW, gcH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
-    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.consist, gcX + 30, gcY + 48, 1);
-    ctx.fillStyle = C.accent; ctx.font = `800 64px ${FONT}`; ctx.fillText(Math.round(12 + e * 84) + "%", gcX + 30, gcY + 116);
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.consist, gcX + 30, gcY + 46, 1);
+    ctx.fillStyle = C.accent; ctx.font = `800 60px ${FONT}`; ctx.fillText(Math.round(12 + e * 84) + "%", gcX + 30, gcY + 110);
     const pts = [0.12, 0.2, 0.16, 0.3, 0.28, 0.44, 0.52, 0.48, 0.64, 0.74, 0.86, 0.96];
-    const cax = gcX + 30, caw = gcW - 60, cay = gcY + 150, cah = gcH - 182, n = pts.length;
+    const cax = gcX + 30, caw = gcW - 60, cay = gcY + 142, cah = gcH - 172, n = pts.length;
     const gpx = (i) => cax + caw * i / (n - 1), gpy = (v) => cay + cah - v * cah;
     ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1;
     for (let g = 0; g <= 3; g++) { const yy = cay + cah * g / 3; ctx.beginPath(); ctx.moveTo(cax, yy); ctx.lineTo(cax + caw, yy); ctx.stroke(); }
@@ -106,51 +106,63 @@
     }
 
     // ── Lista de tareas (se completan y se tachan) ──
-    const tY = SY + 606, tH = 300, tX = SX + 40, tW = SW - 80;
+    const tY = SY + 568, tH = 272, tX = SX + 40, tW = SW - 80;
     roundRect(tX, tY, tW, tH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
-    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.habits, tX + 30, tY + 46, 1);
-    const rowH = 56, rowY0 = tY + 96;
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.habits, tX + 30, tY + 44, 1);
+    const rowH = 52, rowY0 = tY + 92;
     l.tasks.forEach((task, i) => {
-      const ry = rowY0 + i * rowH, done = clamp01((e - (0.12 + i * 0.16)) / 0.1), on = done > 0.5;
-      const bxx = tX + 34, byy = ry;
-      roundRect(bxx, byy - 24, 48, 48, 14);
+      const byy = rowY0 + i * rowH, done = clamp01((e - (0.12 + i * 0.16)) / 0.1), on = done > 0.5;
+      const bxx = tX + 34;
+      roundRect(bxx, byy - 22, 44, 44, 13);
       if (on) {
-        const cg = ctx.createLinearGradient(bxx, byy - 24, bxx + 48, byy + 24); cg.addColorStop(0, C.accent); cg.addColorStop(1, C.sport); ctx.fillStyle = cg; ctx.fill();
-        ctx.save(); ctx.strokeStyle = "#1a0f04"; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(bxx + 12, byy); ctx.lineTo(bxx + 21, byy + 11); ctx.lineTo(bxx + 37, byy - 12); ctx.stroke(); ctx.restore();
+        const cg = ctx.createLinearGradient(bxx, byy - 22, bxx + 44, byy + 22); cg.addColorStop(0, C.accent); cg.addColorStop(1, C.sport); ctx.fillStyle = cg; ctx.fill();
+        ctx.save(); ctx.strokeStyle = "#1a0f04"; ctx.lineWidth = 5.5; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(bxx + 11, byy); ctx.lineTo(bxx + 19, byy + 10); ctx.lineTo(bxx + 34, byy - 11); ctx.stroke(); ctx.restore();
       } else { ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke(); }
-      ctx.textAlign = "left"; ctx.fillStyle = on ? C.textDim : C.text; ctx.font = `600 34px ${FONT}`; ctx.fillText(task, bxx + 74, byy + 12);
-      if (done > 0) { const tw = ctx.measureText(task).width; ctx.strokeStyle = C.textDim; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bxx + 74, byy - 1); ctx.lineTo(bxx + 74 + tw * done, byy - 1); ctx.stroke(); }
+      ctx.textAlign = "left"; ctx.fillStyle = on ? C.textDim : C.text; ctx.font = `600 32px ${FONT}`; ctx.fillText(task, bxx + 68, byy + 11);
+      if (done > 0) { const tw = ctx.measureText(task).width; ctx.strokeStyle = C.textDim; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bxx + 68, byy - 1); ctx.lineTo(bxx + 68 + tw * done, byy - 1); ctx.stroke(); }
     });
 
-    // ── Calendario (racha; los días se van rellenando) ──
-    const kY = SY + 936, kH = 340, kX = SX + 40, kW = SW - 80;
-    roundRect(kX, kY, kW, kH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
-    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.cal, kX + 30, kY + 48, 1);
-    const cols = 7, rows = 5, cellN = cols * rows, filledN = Math.round(e * cellN);
-    ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `800 46px ${FONT}`; ctx.fillText(String(filledN), kX + kW - 30, kY + 54);
-    const gpad = 30, gtop = kY + 86, cellStep = (kH - 116) / rows, cellSz = Math.min((kW - gpad * 2) / cols - 10, cellStep - 10);
-    const cellW = (kW - gpad * 2) / cols;
-    for (let d = 0; d < cellN; d++) {
-      const cc = d % cols, rr = Math.floor(d / cols);
-      const dx = kX + gpad + cc * cellW + (cellW - cellSz) / 2, dy = gtop + rr * cellStep;
-      const a = clamp01(e * cellN - d);
-      roundRect(dx, dy, cellSz, cellSz, 10);
-      if (a > 0.5) { ctx.fillStyle = "rgba(255,122,26,0.92)"; ctx.fill(); } else { ctx.fillStyle = C.bg; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = C.border; ctx.stroke(); }
-    }
+    // ── Barras de progreso: anillo (circular) + barras horizontales ──
+    const pgY = SY + 868, pgH = 316, pgX = SX + 40, pgW = SW - 80;
+    roundRect(pgX, pgY, pgW, pgH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(EN() ? "PROGRESS" : "PROGRESO", pgX + 30, pgY + 46, 1);
+    // Anillo circular (global)
+    const rcx = pgX + 150, rcy = pgY + 180, rr = 92;
+    ring(rcx, rcy, rr, 20, 0.06 + e * 0.9, C.accent);
+    ctx.textAlign = "center"; ctx.fillStyle = C.text; ctx.font = `800 56px ${FONT}`; ctx.fillText(Math.round(6 + e * 88) + "%", rcx, rcy + 18);
+    ctx.fillStyle = C.textDim; ctx.font = `600 22px ${FONT}`; spaced(EN() ? "OVERALL" : "GLOBAL", rcx, rcy + rr + 40, 1);
+    // Barras horizontales
+    const bars = EN() ? [["Strength", 0.9], ["Volume", 0.82], ["Goals", 1.0]] : [["Fuerza", 0.9], ["Volumen", 0.82], ["Objetivos", 1.0]];
+    const bx0 = pgX + 320, bw0 = pgW - 320 - 30;
+    bars.forEach(([lab, tg], i) => {
+      const by = pgY + 96 + i * 76;
+      ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `600 30px ${FONT}`; ctx.fillText(lab, bx0, by);
+      ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `700 28px ${FONT}`; ctx.fillText(Math.round(tg * e * 100) + "%", bx0 + bw0, by);
+      roundRect(bx0, by + 16, bw0, 20, 10); ctx.fillStyle = "rgba(255,122,26,0.14)"; ctx.fill();
+      roundRect(bx0, by + 16, bw0 * tg * e, 20, 10); const bg = ctx.createLinearGradient(bx0, 0, bx0 + bw0, 0); bg.addColorStop(0, C.accent); bg.addColorStop(1, C.sport); ctx.fillStyle = bg; ctx.fill();
+    });
 
-    // ── Mapa de músculos (de ninguno a todos) ──
-    const mTitleY = SY + 1328, mBoxY = mTitleY + 30, mBoxH = SY + SH - mBoxY - 22;
+    // ── Mapa de músculos (de ninguno a todos, activación con pop de brillo) ──
+    const mTitleY = SY + 1220, mBoxY = mTitleY + 30, mBoxH = SY + SH - mBoxY - 22;
     ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.muscTitle, SX + 40, mTitleY, 1);
     const mX = SX + 40, mW = SW - 80;
     roundRect(mX, mBoxY, mW, mBoxH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
     ctx.save(); roundRect(mX + 4, mBoxY + 4, mW - 8, mBoxH - 8, 20); ctx.clip();
     if (cuerpo.complete && cuerpo.naturalWidth) {
-      const ar = cuerpo.naturalWidth / cuerpo.naturalHeight; let dw = mW - 60, dh = (mW - 60) / ar; if (dh > mBoxH - 28) { dh = mBoxH - 28; dw = dh * ar; }
+      const ar = cuerpo.naturalWidth / cuerpo.naturalHeight; let dh = mBoxH - 44, dw = dh * ar; if (dw > mW - 40) { dw = mW - 40; dh = dw / ar; }
       const ix = mX + (mW - dw) / 2, iy = mBoxY + (mBoxH - dh) / 2;
-      ctx.globalAlpha = 0.5; ctx.drawImage(cuerpo, ix, iy, dw, dh); ctx.globalAlpha = 1;
-      MUSCLES.forEach((mu, i) => { const a = clamp01((e - i / MUSCLES.length * 0.9) / 0.08); if (a > 0.01 && mu.im.complete && mu.im.naturalWidth) { ctx.globalAlpha = a; ctx.drawImage(mu.im, ix, iy, dw, dh); ctx.globalAlpha = 1; } });
-      const nOn = MUSCLES.filter((mu, i) => e > i / MUSCLES.length * 0.9).length;
-      ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `800 40px ${FONT}`; ctx.fillText(nOn + "/" + MUSCLES.length, mX + mW - 30, mBoxY + 54);
+      glow(ix + dw / 2, iy + dh / 2, dw * 0.62, `rgba(255,122,26,${0.06 + 0.16 * e})`);
+      ctx.globalAlpha = 0.45; ctx.drawImage(cuerpo, ix, iy, dw, dh); ctx.globalAlpha = 1;
+      MUSCLES.forEach((mu, i) => {
+        if (!(mu.im.complete && mu.im.naturalWidth)) return;
+        const at = i / MUSCLES.length * 0.82, a = clamp01((e - at) / 0.05);
+        if (a <= 0.01) return;
+        ctx.globalAlpha = a; ctx.drawImage(mu.im, ix, iy, dw, dh); ctx.globalAlpha = 1;
+        const fl = clamp01((e - at) / 0.05) * clamp01(1 - (e - at) / 0.18);
+        if (fl > 0.01) { ctx.save(); ctx.globalCompositeOperation = "screen"; ctx.globalAlpha = fl * 0.85; ctx.drawImage(mu.im, ix, iy, dw, dh); ctx.restore(); ctx.globalAlpha = 1; }
+      });
+      const nOn = MUSCLES.filter((mu, i) => e > i / MUSCLES.length * 0.82).length;
+      ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `800 42px ${FONT}`; ctx.fillText(nOn + "/" + MUSCLES.length, mX + mW - 30, mBoxY + 56);
     }
     ctx.restore();
   }
