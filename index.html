@@ -10,6 +10,11 @@
 </head>
 <body class="mk">
 
+  <div id="mk-loader" role="status" aria-label="Cargando">
+    <div class="mk-loader__spin"></div>
+    <span class="mk-loader__txt">Cargando…</span>
+  </div>
+
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></symbol>
     <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="12" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/></symbol>
@@ -172,5 +177,17 @@
   <script src="marketing.js"></script>
   <script src="lockscreen.js"></script>
   <script src="rankup.js"></script>
+  <script>
+    // Oculta la pantalla de carga cuando la página está totalmente cargada.
+    (function () {
+      var loader = document.getElementById("mk-loader");
+      if (!loader) return;
+      var hide = function () { loader.classList.add("hidden"); };
+      var ready = function () { requestAnimationFrame(function () { setTimeout(hide, 250); }); };
+      if (document.readyState === "complete") ready();
+      else window.addEventListener("load", ready);
+      setTimeout(hide, 10000); // seguridad: nunca dejar el loader atascado
+    })();
+  </script>
 </body>
 </html>
