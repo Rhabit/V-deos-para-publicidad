@@ -28,6 +28,7 @@
   const emblem = new Image(); emblem.src = "assets/rank-silver.png";
   const thumbCurl = new Image(); thumbCurl.src = "assets/ex-curl.png";
   const thumbBench = new Image(); thumbBench.src = "assets/ex-bench.png";
+  const bodyIco = new Image(); bodyIco.src = "assets/musculo-cuerpo.png";
   const langNow = () => { const on = document.querySelector("#mk-lang button.on"); return on && on.dataset.lang === "en" ? "en" : "es"; };
   const poseNow = () => { const on = document.querySelector("#mk-pose button.on"); return on && on.dataset.pose === "flat" ? "flat" : "iso"; };
 
@@ -35,7 +36,7 @@
     es: { time: "TIEMPO", vol: "VOLUMEN", sets: "SERIES", muscles: "MÚSCULOS", colSet: "SERIE", colPrev: "ANTERIOR", addSet: "Añadir serie", rankup: "SUBIDA DE RANGO", rank: "SILVER I", sub: "Sigue así. Imparable.", ex1: "Curl de bíceps", ex2: "Press de banca" },
     en: { time: "TIME", vol: "VOLUME", sets: "SETS", muscles: "MUSCLES", colSet: "SET", colPrev: "PREVIOUS", addSet: "Add set", rankup: "RANK UP", rank: "SILVER I", sub: "Keep going. Unstoppable.", ex1: "Biceps curl", ex2: "Bench press" },
   };
-  let weight = "55", reps = "8";
+  let weight = "14", reps = "8";
   let start = performance.now();
   const restart = () => { start = performance.now(); };
 
@@ -67,17 +68,17 @@
     roundRect(W / 2 - nw / 2, SY + 14, nw, nh, nh / 2); ctx.fillStyle = "#000"; ctx.fill();
   }
   function drawStatusBar() {
-    const y = SY + 70;
-    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `700 30px ${FONT}`;
-    ctx.fillText("9:41", SX + 46, y);
-    let bx = SX + SW - 168;
-    ctx.fillStyle = C.text;
-    for (let i = 0; i < 4; i++) { const bh = 8 + i * 7; ctx.fillRect(bx + i * 13, y - bh, 8, bh); }
-    const btx = SX + SW - 100, bty = y - 22, bw = 56, bh = 26;
-    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255,255,255,0.6)";
-    roundRect(btx, bty, bw, bh, 7); ctx.stroke();
-    ctx.fillStyle = "rgba(255,255,255,0.6)"; roundRect(btx + bw + 2, bty + 8, 5, 10, 2); ctx.fill();
-    ctx.fillStyle = C.text; roundRect(btx + 4, bty + 4, (bw - 8) * 0.7, bh - 8, 4); ctx.fill();
+    const y = SY + 66;
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 32px ${FONT}`;
+    ctx.fillText("9:41", SX + 42, y);
+    let bx = SX + SW - 160;
+    ctx.fillStyle = C.textDim;
+    for (let i = 0; i < 4; i++) { const bh = 7 + i * 6; ctx.fillRect(bx + i * 12, y - bh, 7, bh); }
+    const btx = SX + SW - 94, bty = y - 20, bw = 50, bh = 24;
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(194,184,168,0.7)";
+    roundRect(btx, bty, bw, bh, 6); ctx.stroke();
+    ctx.fillStyle = "rgba(194,184,168,0.7)"; roundRect(btx + bw + 2, bty + 7, 4, 10, 2); ctx.fill();
+    ctx.fillStyle = C.textDim; roundRect(btx + 4, bty + 4, (bw - 8) * 0.7, bh - 8, 3); ctx.fill();
   }
   function dumbbell(cx, cy, s, color) {
     ctx.save(); ctx.strokeStyle = color; ctx.lineCap = "round";
@@ -119,9 +120,9 @@
       ctx.drawImage(thumb, thumbX - dw / 2, thumbY - dh / 2, dw, dh);
     }
     ctx.restore();
-    ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.4)"; ctx.stroke();
-    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `800 42px ${FONT}`;
-    ctx.fillText(name, thumbX + thumbR + 28, thumbY + 14);
+    ctx.beginPath(); ctx.arc(thumbX, thumbY, thumbR, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `700 38px ${FONT}`;
+    ctx.fillText(name, thumbX + thumbR + 28, thumbY + 13);
     ctx.textAlign = "center"; ctx.fillStyle = C.textDim; ctx.font = `800 38px ${FONT}`;
     ctx.fillText("···", x + w - 56, thumbY - 6);
 
@@ -140,28 +141,26 @@
       const on = s.done;
       if (on) {
         ctx.globalAlpha = s.active ? doneAnim : 1;
-        roundRect(inX - 2, ry + 7, inW + 4, rowH - 14, 20);
-        const gg = ctx.createLinearGradient(0, ry, 0, ry + rowH);
-        gg.addColorStop(0, "rgba(255,122,26,0.16)"); gg.addColorStop(1, "rgba(255,122,26,0.05)");
-        ctx.fillStyle = gg; ctx.fill();
-        ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,122,26,0.30)"; ctx.stroke();
+        roundRect(inX - 2, ry + 6, inW + 4, rowH - 12, 22);
+        ctx.fillStyle = "rgba(255,122,26,0.13)"; ctx.fill(); // color-mix accent 13% (web)
         ctx.globalAlpha = 1;
       }
-      ctx.textAlign = "center"; ctx.font = `800 32px ${FONT}`;
-      ctx.fillStyle = on ? C.accent : C.textDim; ctx.fillText(String(i + 1), cSet, cy + 11);
-      ctx.fillStyle = C.textDim; ctx.font = `500 26px ${FONT}`; ctx.fillText(s.prev, cPrev, cy + 9);
+      ctx.textAlign = "center"; ctx.font = `700 36px ${FONT}`;
+      ctx.fillStyle = on ? C.accent : C.textDim; ctx.fillText(String(i + 1), cSet, cy + 12);
+      ctx.fillStyle = C.textDim; ctx.font = `500 30px ${FONT}`; ctx.fillText(s.prev, cPrev, cy + 10);
       let kgTxt = String(s.kg), repsTxt = String(s.reps), kgFocus = false, repsFocus = false;
       if (s.active) {
         kgTxt = typeNum(s.kg, t, KG_T0, KG_T1); repsTxt = typeNum(s.reps, t, RP_T0, RP_T1);
         kgFocus = t >= KG_T0 && t < RP_T0; repsFocus = t >= RP_T0 && t < PRESS_T;
       }
       if (!on) {
-        roundRect(cKg - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
-        if (kgFocus) { ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.stroke(); }
-        roundRect(cReps - 58, cy - 30, 116, 60, 12); ctx.fillStyle = C.surfaceAlt; ctx.fill();
-        if (repsFocus) { ctx.lineWidth = 3; ctx.strokeStyle = C.accent; ctx.stroke(); }
+        // Casillas de entrada: fondo --bg con borde --border (foco: borde acento)
+        roundRect(cKg - 58, cy - 30, 116, 60, 14); ctx.fillStyle = C.bg; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = kgFocus ? C.accent : C.border; ctx.stroke();
+        roundRect(cReps - 58, cy - 30, 116, 60, 14); ctx.fillStyle = C.bg; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = repsFocus ? C.accent : C.border; ctx.stroke();
       }
-      ctx.fillStyle = on ? C.accent : C.text; ctx.font = `800 40px ${FONT}`; ctx.textAlign = "center";
+      ctx.fillStyle = C.text; ctx.font = `700 40px ${FONT}`; ctx.textAlign = "center";
       ctx.fillText(kgTxt, cKg, cy + 13); ctx.fillText(repsTxt, cReps, cy + 13);
       // Cursor parpadeante en la casilla que se está rellenando y aún vacía.
       if ((kgFocus && !kgTxt) || (repsFocus && !repsTxt)) {
@@ -169,18 +168,19 @@
         if (Math.floor(t * 2) % 2 === 0) { ctx.fillStyle = C.accent; ctx.fillRect(bx - 2, cy - 20, 4, 40); }
       }
 
-      const chS = 58, chX = cChk - chS / 2, chY = cy - chS / 2;
+      const chS = 72, chX = cChk - chS / 2, chY = cy - chS / 2;
       const pop = s.active ? 1 + 0.18 * Math.sin(clamp01((t - PRESS_T) / 0.18) * Math.PI) : 1;
       ctx.save(); ctx.translate(cChk, cy); ctx.scale(pop, pop); ctx.translate(-cChk, -cy);
-      roundRect(chX, chY, chS, chS, 15);
+      roundRect(chX, chY, chS, chS, 22);
       if (on) {
-        const cg = ctx.createLinearGradient(chX, chY, chX, chY + chS);
-        cg.addColorStop(0, C.sport); cg.addColorStop(1, C.accent);
+        const cg = ctx.createLinearGradient(chX, chY, chX + chS, chY + chS);
+        cg.addColorStop(0, C.accent); cg.addColorStop(1, C.sport);
         ctx.fillStyle = cg; ctx.globalAlpha = s.active ? doneAnim : 1; ctx.fill(); ctx.globalAlpha = 1;
-        checkMark(cChk, cy, chS * 0.7, "#1a0f06");
+        checkMark(cChk, cy, chS * 0.55, "#1a0f04");
       } else {
-        ctx.lineWidth = 3; ctx.strokeStyle = C.border; ctx.stroke();
-        checkMark(cChk, cy, chS * 0.62, "rgba(194,184,168,0.35)");
+        ctx.fillStyle = C.surfaceAlt; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+        checkMark(cChk, cy, chS * 0.5, "rgba(194,184,168,0.55)");
       }
       ctx.restore();
 
@@ -195,8 +195,8 @@
     });
 
     const asY = ry + 16, asH = 62;
-    ctx.save(); ctx.setLineDash([10, 8]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,122,26,0.4)";
-    roundRect(inX, asY, inW, asH, 16); ctx.stroke(); ctx.restore();
+    ctx.save(); ctx.setLineDash([9, 7]); ctx.lineWidth = 2; ctx.strokeStyle = C.border;
+    roundRect(inX, asY, inW, asH, 20); ctx.stroke(); ctx.restore();
     ctx.fillStyle = C.accent; ctx.textAlign = "center"; ctx.font = `700 30px ${FONT}`;
     ctx.fillText("+  " + L.addSet, inX + inW / 2, asY + asH / 2 + 11);
     return cardH;
@@ -210,12 +210,12 @@
     const ex1Rows = [
       { prev: "10×12", kg: "12", reps: "12", done: true },
       { prev: "12×10", kg: "12", reps: "10", done: true },
-      { prev: "12×9", kg: "14", reps: "8", done: true },
+      { prev: "12×9", kg: weight, reps: reps, done: done3, active: true },
     ];
     const ex2Rows = [
-      { prev: "50×10", kg: "50", reps: "10", done: true },
-      { prev: "50×10", kg: "50", reps: "9", done: true },
-      { prev: "52×8", kg: weight, reps: reps, done: done3, active: true },
+      { prev: "47×10", kg: "50", reps: "10", done: false },
+      { prev: "47×9", kg: "50", reps: "10", done: false },
+      { prev: "52×8", kg: "55", reps: "8", done: false },
     ];
     const allRows = ex1Rows.concat(ex2Rows);
     const vol = allRows.filter((s) => s.done).reduce((a, s) => a + (parseFloat(s.kg) || 0) * (parseInt(s.reps) || 0), 0);
@@ -227,19 +227,27 @@
       { label: L.time, value: "12:04", clock: true },
       { label: L.vol, value: String(Math.round(vol)) },
       { label: L.sets, value: String(nDone) },
-      { label: L.muscles, value: "2" },
+      { label: L.muscles, value: "2", body: true },
     ];
     const gx0 = SX + 26, gw = SW - 52, cw = gw / cols.length;
     ctx.textAlign = "center";
     cols.forEach((c, i) => {
       const cx = gx0 + cw * i + cw / 2;
       if (c.clock) {
-        const tw = ctx.measureText(c.value).width;
         ctx.strokeStyle = C.accent; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(cx, sbY - 62, 14, 0, 7); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(cx, sbY - 62); ctx.lineTo(cx, sbY - 71); ctx.moveTo(cx, sbY - 62); ctx.lineTo(cx + 8, sbY - 62); ctx.stroke();
       }
-      ctx.fillStyle = C.text; ctx.font = `800 44px ${FONT}`; ctx.fillText(c.value, cx, sbY);
+      ctx.fillStyle = C.text; ctx.font = `800 44px ${FONT}`;
+      if (c.body && bodyIco.complete && bodyIco.naturalWidth) {
+        const vw = ctx.measureText(c.value).width, ic = 44, gap = 4;
+        const ix = cx - (ic + gap + vw) / 2, iar = bodyIco.naturalWidth / bodyIco.naturalHeight;
+        let dw = ic, dh = ic / iar; if (dh > ic) { dh = ic; dw = ic * iar; } // contain
+        ctx.drawImage(bodyIco, ix + (ic - dw) / 2, sbY - 34 + (ic - dh) / 2, dw, dh);
+        ctx.textAlign = "left"; ctx.fillText(c.value, ix + ic + gap, sbY); ctx.textAlign = "center";
+      } else {
+        ctx.fillText(c.value, cx, sbY);
+      }
       ctx.fillStyle = C.textDim; ctx.font = `600 23px ${FONT}`; spacedText(c.label, cx, sbY + 38, 1);
       if (i < cols.length - 1) { ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(gx0 + cw * (i + 1), sbY - 34); ctx.lineTo(gx0 + cw * (i + 1), sbY + 28); ctx.stroke(); }
     });
