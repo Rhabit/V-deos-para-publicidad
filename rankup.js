@@ -28,6 +28,7 @@
   const SX = PX + 33, SY = PY + 33, SW = PW - 66, SH = PH - 66, SR = 90;
 
   const emblem = new Image(); emblem.src = "assets/rank-silver.png";
+  if (emblem.decode) emblem.decode().catch(() => {});
   const thumbCurl = new Image(); thumbCurl.src = "assets/ex-curl.png";
   const thumbBench = new Image(); thumbBench.src = "assets/ex-bench.png";
   const bodyIco = new Image(); bodyIco.src = "assets/musculo-cuerpo.png";
@@ -343,6 +344,15 @@
         octx.fillRect(-ow, -oh, ow * 3, oh * 3); octx.restore();
       }
       ctx.save(); ctx.globalAlpha = emAlpha; ctx.drawImage(off, cx - ew / 2, cy - eh / 2, ew, eh); ctx.restore();
+    } else if (sc > 0.02 && emAlpha > 0) {
+      // Reserva mientras el emblema aún no ha cargado: escudo plateado.
+      ctx.save(); ctx.globalAlpha = emAlpha; ctx.translate(cx, cy); ctx.scale(sc, sc);
+      const g2 = ctx.createLinearGradient(0, -240, 0, 240);
+      g2.addColorStop(0, "#e8ebf2"); g2.addColorStop(0.5, "#9aa0b4"); g2.addColorStop(1, "#6b7183");
+      ctx.fillStyle = g2; ctx.strokeStyle = "#cfd3de"; ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(-170, -230); ctx.lineTo(170, -230); ctx.lineTo(170, 120); ctx.lineTo(0, 250); ctx.lineTo(-170, 120); ctx.closePath();
+      ctx.fill(); ctx.stroke(); ctx.restore();
     }
 
     drawSparks(rt, cx, cy, emAlpha);
@@ -418,6 +428,7 @@
       drawTri(src, sA, sC, sD, A, Cc, D);
     }
   }
+  const bgColor = () => { const el = document.getElementById("mk-color"); return (el && el.value) || "#202124"; };
   function render(t) {
     const flashStart = 2.85, rankStart = 3.02;
     ctx = pctx;
@@ -428,7 +439,8 @@
       else { const rt = t - rankStart; drawRankUp(rt); if (rt < 0.3) drawFlash(1 - rt / 0.3); }
     });
     ctx = mainCtx;
-    mainCtx.clearRect(0, 0, W, H);
+    // Fondo = color elegido (como el resto de clips); el móvil se compone encima.
+    mainCtx.fillStyle = bgColor(); mainCtx.fillRect(0, 0, W, H);
     if (poseNow() === "iso") blitIso(pcv); else mainCtx.drawImage(pcv, 0, 0);
   }
 
