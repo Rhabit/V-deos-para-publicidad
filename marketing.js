@@ -23,12 +23,20 @@
       // Si aún no existe la versión EN del clip, cae a la ES (no rompe la galería).
       v.onerror = () => {
         const es = want.replace("-en.webm", ".webm");
-        if (es !== want && !(v.currentSrc || v.src).endsWith(es)) { v.src = es; v.play().catch(() => {}); }
+        if (es !== want && !(v.currentSrc || v.src).endsWith(es)) { v.src = es; if (clip.dataset.hover === "1") v.play().catch(() => {}); }
       };
-      v.src = want; v.play().catch(() => {});
+      v.src = want; if (clip.dataset.hover === "1") v.play().catch(() => {});
     });
   }
   setVideos();
+
+  // Los clips solo se reproducen al pasar el cursor por encima (no en bucle automático).
+  clips.forEach((clip) => {
+    const box = clip.querySelector(".clip__video"); if (!box) return;
+    const v = clip.querySelector("video");
+    box.addEventListener("mouseenter", () => { clip.dataset.hover = "1"; if (v) { try { v.currentTime = 0; } catch (e) {} v.play().catch(() => {}); } });
+    box.addEventListener("mouseleave", () => { clip.dataset.hover = "0"; if (v) v.pause(); });
+  });
 
   // ---- Pose ----
   poseSeg.querySelectorAll("button").forEach((b) => {

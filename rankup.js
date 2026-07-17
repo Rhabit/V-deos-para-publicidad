@@ -470,8 +470,14 @@
     if (poseNow() === "iso") blitIso(pcv); else mainCtx.drawImage(pcv, 0, 0);
   }
 
-  let encoding = false;
-  function frame(now) { if (!encoding) render(((now - start) / 1000) % CYCLE); requestAnimationFrame(frame); }
+  let encoding = false, hover = false;
+  const clipEl = canvas.closest(".clip");
+  if (clipEl) {
+    clipEl.addEventListener("mouseenter", () => { hover = true; start = performance.now(); });
+    clipEl.addEventListener("mouseleave", () => { hover = false; render(0); });
+  }
+  render(0); // fotograma inicial estático; solo se anima con el cursor encima
+  function frame(now) { if (!encoding && hover) render(((now - start) / 1000) % CYCLE); requestAnimationFrame(frame); }
   requestAnimationFrame(frame);
 
   // ---------- Controles ----------

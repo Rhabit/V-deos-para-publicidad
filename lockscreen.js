@@ -141,9 +141,15 @@
     }
   }
   function render(t) { drawWallpaper(); drawClock(); drawNotifs(t); }
-  let encoding = false;
+  let encoding = false, hover = false;
+  const clipEl = canvas.closest(".clip");
+  if (clipEl) {
+    clipEl.addEventListener("mouseenter", () => { hover = true; start = performance.now(); });
+    clipEl.addEventListener("mouseleave", () => { hover = false; render(0); });
+  }
+  render(0); // fotograma inicial estático; solo se anima con el cursor encima
   function frame(now) {
-    if (!encoding) render(((now - start) / 1000) % CYCLE);
+    if (!encoding && hover) render(((now - start) / 1000) % CYCLE);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
