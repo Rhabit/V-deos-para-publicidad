@@ -77,73 +77,80 @@
     const p = clamp01(t / CYCLE), e = easeOut(p), pulse = 0.5 + 0.5 * Math.sin(t * 6);
     statusBar();
     const l = {
-      es: { title: "TU PROGRESO", day: "DÍA", ranks: ["NOVATO", "APRENDIZ", "INTERMEDIO", "AVANZADO"], level: "NIVEL", streak: "Racha", days: "días", workouts: "Entrenos", consist: "Constancia", volTitle: "VOLUMEN SEMANAL", muscTitle: "MÚSCULOS TRABAJADOS", sub: "De principiante a avanzado" },
-      en: { title: "YOUR PROGRESS", day: "DAY", ranks: ["ROOKIE", "APPRENTICE", "INTERMEDIATE", "ADVANCED"], level: "LEVEL", streak: "Streak", days: "days", workouts: "Workouts", consist: "Consistency", volTitle: "WEEKLY VOLUME", muscTitle: "MUSCLES WORKED", sub: "From beginner to advanced" },
+      es: { title: "TU PROGRESO", sub: "De principiante a avanzado", consist: "CONSTANCIA", habits: "HÁBITOS COMPLETADOS", cal: "RACHA DE DÍAS", muscTitle: "MÚSCULOS TRABAJADOS", tasks: ["Entrenar", "Meditar", "Leer 20 min", "Beber agua"] },
+      en: { title: "YOUR PROGRESS", sub: "From beginner to advanced", consist: "CONSISTENCY", habits: "HABITS COMPLETED", cal: "DAY STREAK", muscTitle: "MUSCLES WORKED", tasks: ["Workout", "Meditate", "Read 20 min", "Drink water"] },
     }[langNow()];
 
     // Header
-    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `800 44px ${FONT}`; ctx.fillText(l.title, SX + 40, SY + 168);
-    ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `800 34px ${FONT}`;
-    ctx.fillText(l.day + " " + Math.round(1 + e * 364), SX + SW - 40, SY + 168);
+    ctx.textAlign = "left"; ctx.fillStyle = C.text; ctx.font = `800 46px ${FONT}`; ctx.fillText(l.title, SX + 40, SY + 158);
+    ctx.fillStyle = C.textDim; ctx.font = `500 26px ${FONT}`; ctx.fillText(l.sub, SX + 40, SY + 198);
 
-    // Hero: anillo de nivel + rango
-    const hcx = SX + 190, hcy = SY + 400;
-    glow(hcx, hcy, 260, `rgba(255,122,26,${0.22 + 0.08 * pulse})`);
-    ring(hcx, hcy, 130, 26, 0.06 + e * 0.9, C.accent);
-    ctx.textAlign = "center"; ctx.fillStyle = C.textDim; ctx.font = `700 24px ${FONT}`; spaced(l.level, hcx, hcy - 34, 2);
-    ctx.fillStyle = C.text; ctx.font = `800 116px ${FONT}`; ctx.fillText(String(Math.round(1 + e * 29)), hcx, hcy + 44);
-    // rango a la derecha del anillo
-    const rankIdx = Math.min(3, Math.floor(e * 3.999));
-    const rx = hcx + 210;
-    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 26px ${FONT}`; spaced(EN() ? "RANK" : "RANGO", rx, hcy - 70, 2);
-    ctx.fillStyle = C.accent; ctx.font = `800 56px ${FONT}`; ctx.fillText(l.ranks[rankIdx], rx, hcy - 8);
-    // barra XP
-    const xpw = SW - 40 - (rx - SX); const xf = (e * 4) % 1;
-    roundRect(rx, hcy + 26, xpw, 22, 11); ctx.fillStyle = "rgba(255,122,26,0.14)"; ctx.fill();
-    roundRect(rx, hcy + 26, xpw * (e < 1 ? xf : 1), 22, 11); const xg = ctx.createLinearGradient(rx, 0, rx + xpw, 0); xg.addColorStop(0, C.accent); xg.addColorStop(1, C.sport); ctx.fillStyle = xg; ctx.fill();
-    ctx.fillStyle = C.textDim; ctx.font = `600 22px ${FONT}`; ctx.fillText(l.sub, rx, hcy + 92);
+    // ── Gráfica lineal (constancia sube) ──
+    const gcY = SY + 236, gcH = 336, gcX = SX + 40, gcW = SW - 80;
+    roundRect(gcX, gcY, gcW, gcH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.consist, gcX + 30, gcY + 48, 1);
+    ctx.fillStyle = C.accent; ctx.font = `800 64px ${FONT}`; ctx.fillText(Math.round(12 + e * 84) + "%", gcX + 30, gcY + 116);
+    const pts = [0.12, 0.2, 0.16, 0.3, 0.28, 0.44, 0.52, 0.48, 0.64, 0.74, 0.86, 0.96];
+    const cax = gcX + 30, caw = gcW - 60, cay = gcY + 150, cah = gcH - 182, n = pts.length;
+    const gpx = (i) => cax + caw * i / (n - 1), gpy = (v) => cay + cah - v * cah;
+    ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1;
+    for (let g = 0; g <= 3; g++) { const yy = cay + cah * g / 3; ctx.beginPath(); ctx.moveTo(cax, yy); ctx.lineTo(cax + caw, yy); ctx.stroke(); }
+    const prog = e * (n - 1), lastI = Math.floor(prog), frac = prog - lastI, rp = [];
+    for (let i = 0; i <= lastI && i < n; i++) rp.push([gpx(i), gpy(pts[i])]);
+    if (lastI < n - 1) { const vv = pts[lastI] + (pts[lastI + 1] - pts[lastI]) * frac; rp.push([gpx(lastI + frac), gpy(vv)]); }
+    if (rp.length >= 2) {
+      ctx.beginPath(); ctx.moveTo(rp[0][0], cay + cah); rp.forEach((q) => ctx.lineTo(q[0], q[1])); ctx.lineTo(rp[rp.length - 1][0], cay + cah); ctx.closePath();
+      const ag = ctx.createLinearGradient(0, cay, 0, cay + cah); ag.addColorStop(0, "rgba(255,122,26,0.35)"); ag.addColorStop(1, "rgba(255,122,26,0)"); ctx.fillStyle = ag; ctx.fill();
+      ctx.beginPath(); rp.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.strokeStyle = C.accent; ctx.lineWidth = 5; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke();
+      const hd = rp[rp.length - 1]; ctx.beginPath(); ctx.arc(hd[0], hd[1], 11, 0, 7); ctx.fillStyle = "#fff"; ctx.fill(); ctx.strokeStyle = C.accent; ctx.lineWidth = 4; ctx.stroke();
+    }
 
-    // 3 tarjetas de stat (contando)
-    const cardY = SY + 570, cardH = 168, gap = 20, cw = (SW - 80 - gap * 2) / 3;
-    const stats = [[l.streak, Math.round(e * 365), l.days], [l.workouts, Math.round(e * 248), ""], [l.consist, Math.round(12 + e * 84) + "%", ""]];
-    stats.forEach((s, i) => {
-      const cx = SX + 40 + i * (cw + gap);
-      roundRect(cx, cardY, cw, cardH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
-      ctx.textAlign = "center"; ctx.fillStyle = C.text; ctx.font = `800 58px ${FONT}`; ctx.fillText(typeof s[1] === "number" ? fmt(s[1]) : s[1], cx + cw / 2, cardY + 88);
-      ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(s[0].toUpperCase(), cx + cw / 2, cardY + 128, 0.5);
+    // ── Lista de tareas (se completan y se tachan) ──
+    const tY = SY + 606, tH = 300, tX = SX + 40, tW = SW - 80;
+    roundRect(tX, tY, tW, tH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.habits, tX + 30, tY + 46, 1);
+    const rowH = 56, rowY0 = tY + 96;
+    l.tasks.forEach((task, i) => {
+      const ry = rowY0 + i * rowH, done = clamp01((e - (0.12 + i * 0.16)) / 0.1), on = done > 0.5;
+      const bxx = tX + 34, byy = ry;
+      roundRect(bxx, byy - 24, 48, 48, 14);
+      if (on) {
+        const cg = ctx.createLinearGradient(bxx, byy - 24, bxx + 48, byy + 24); cg.addColorStop(0, C.accent); cg.addColorStop(1, C.sport); ctx.fillStyle = cg; ctx.fill();
+        ctx.save(); ctx.strokeStyle = "#1a0f04"; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(bxx + 12, byy); ctx.lineTo(bxx + 21, byy + 11); ctx.lineTo(bxx + 37, byy - 12); ctx.stroke(); ctx.restore();
+      } else { ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke(); }
+      ctx.textAlign = "left"; ctx.fillStyle = on ? C.textDim : C.text; ctx.font = `600 34px ${FONT}`; ctx.fillText(task, bxx + 74, byy + 12);
+      if (done > 0) { const tw = ctx.measureText(task).width; ctx.strokeStyle = C.textDim; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(bxx + 74, byy - 1); ctx.lineTo(bxx + 74 + tw * done, byy - 1); ctx.stroke(); }
     });
 
-    // Gráfica de barras (crece con tendencia ascendente)
-    const chY = SY + 782, chH = 300, chX = SX + 40, chW = SW - 80;
-    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.volTitle, chX, chY, 1);
-    const baseY = chY + chH, nB = 10;
-    const targets = [0.18, 0.24, 0.3, 0.28, 0.42, 0.5, 0.62, 0.7, 0.86, 1.0];
-    const bw = (chW - (nB - 1) * 14) / nB;
-    for (let i = 0; i < nB; i++) {
-      const bp = clamp01((e - i * 0.02) * 1.15), hh = targets[i] * (chH - 40) * bp;
-      const bx = chX + i * (bw + 14), by = baseY - hh;
-      roundRect(bx, by, bw, hh, 8); const bg2 = ctx.createLinearGradient(0, by, 0, baseY); bg2.addColorStop(0, C.sport); bg2.addColorStop(1, C.accentSoft || "#c45b12"); ctx.fillStyle = bg2; ctx.fill();
+    // ── Calendario (racha; los días se van rellenando) ──
+    const kY = SY + 936, kH = 340, kX = SX + 40, kW = SW - 80;
+    roundRect(kX, kY, kW, kH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
+    ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.cal, kX + 30, kY + 48, 1);
+    const cols = 7, rows = 5, cellN = cols * rows, filledN = Math.round(e * cellN);
+    ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `800 46px ${FONT}`; ctx.fillText(String(filledN), kX + kW - 30, kY + 54);
+    const gpad = 30, gtop = kY + 86, cellStep = (kH - 116) / rows, cellSz = Math.min((kW - gpad * 2) / cols - 10, cellStep - 10);
+    const cellW = (kW - gpad * 2) / cols;
+    for (let d = 0; d < cellN; d++) {
+      const cc = d % cols, rr = Math.floor(d / cols);
+      const dx = kX + gpad + cc * cellW + (cellW - cellSz) / 2, dy = gtop + rr * cellStep;
+      const a = clamp01(e * cellN - d);
+      roundRect(dx, dy, cellSz, cellSz, 10);
+      if (a > 0.5) { ctx.fillStyle = "rgba(255,122,26,0.92)"; ctx.fill(); } else { ctx.fillStyle = C.bg; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = C.border; ctx.stroke(); }
     }
-    ctx.strokeStyle = C.border; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(chX, baseY + 1); ctx.lineTo(chX + chW, baseY + 1); ctx.stroke();
 
-    // Mapa de músculos (de ninguno a todos)
-    const mY = SY + 1150, mTitleY = mY, mBoxY = mY + 32, mBoxH = SY + SH - mBoxY - 30;
+    // ── Mapa de músculos (de ninguno a todos) ──
+    const mTitleY = SY + 1328, mBoxY = mTitleY + 30, mBoxH = SY + SH - mBoxY - 22;
     ctx.textAlign = "left"; ctx.fillStyle = C.textDim; ctx.font = `600 24px ${FONT}`; spaced(l.muscTitle, SX + 40, mTitleY, 1);
     const mX = SX + 40, mW = SW - 80;
     roundRect(mX, mBoxY, mW, mBoxH, 24); ctx.fillStyle = C.surface; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.border; ctx.stroke();
     ctx.save(); roundRect(mX + 4, mBoxY + 4, mW - 8, mBoxH - 8, 20); ctx.clip();
     if (cuerpo.complete && cuerpo.naturalWidth) {
-      const ar = cuerpo.naturalWidth / cuerpo.naturalHeight; let dw = mW - 40, dh = (mW - 40) / ar; if (dh > mBoxH - 40) { dh = mBoxH - 40; dw = dh * ar; }
+      const ar = cuerpo.naturalWidth / cuerpo.naturalHeight; let dw = mW - 60, dh = (mW - 60) / ar; if (dh > mBoxH - 28) { dh = mBoxH - 28; dw = dh * ar; }
       const ix = mX + (mW - dw) / 2, iy = mBoxY + (mBoxH - dh) / 2;
       ctx.globalAlpha = 0.5; ctx.drawImage(cuerpo, ix, iy, dw, dh); ctx.globalAlpha = 1;
-      MUSCLES.forEach((mu, i) => {
-        const th = i / MUSCLES.length * 0.9;
-        const a = clamp01((e - th) / 0.08);
-        if (a > 0.01 && mu.im.complete && mu.im.naturalWidth) { ctx.globalAlpha = a; ctx.drawImage(mu.im, ix, iy, dw, dh); ctx.globalAlpha = 1; }
-      });
-      // contador de músculos
+      MUSCLES.forEach((mu, i) => { const a = clamp01((e - i / MUSCLES.length * 0.9) / 0.08); if (a > 0.01 && mu.im.complete && mu.im.naturalWidth) { ctx.globalAlpha = a; ctx.drawImage(mu.im, ix, iy, dw, dh); ctx.globalAlpha = 1; } });
       const nOn = MUSCLES.filter((mu, i) => e > i / MUSCLES.length * 0.9).length;
-      ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `800 44px ${FONT}`; ctx.fillText(nOn + "/" + MUSCLES.length, mX + mW - 34, mBoxY + 60);
+      ctx.textAlign = "right"; ctx.fillStyle = C.accent; ctx.font = `800 40px ${FONT}`; ctx.fillText(nOn + "/" + MUSCLES.length, mX + mW - 30, mBoxY + 54);
     }
     ctx.restore();
   }
