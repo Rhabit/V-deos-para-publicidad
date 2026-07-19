@@ -79,6 +79,8 @@
   const W = 1080, H = 1920, CYCLE = 6.0;
   canvas.width = W; canvas.height = H;
   const FONT = 'system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif';
+  // Posicionamiento de notificaciones: arrastrables en vertical, con margen inferior neutro.
+  const NTOP = 660, NBOTTOM = 220, NGAP = 26;
 
   const langNow = () => {
     const on = document.querySelector("#mk-lang button.on");
@@ -187,43 +189,65 @@
     wrapLines(n.text, w - (tx - x) - 36 * fs).forEach((ln, i) => ctx.fillText(ln, tx, y + 98 * fs + i * 46 * fs));
     ctx.restore();
   }
+  // Clamp del top de una notificación dentro de la zona útil (deja margen inferior).
+  const clampY = (yTop, h) => Math.max(NTOP, Math.min(yTop, H - NBOTTOM - h));
+  // Asigna posición por defecto (apiladas) a las notificaciones que aún no se han movido.
+  function assignDefaultY() {
+    let y = NTOP;
+    notifs.forEach((n) => { const h = notifHeight(n, 1); if (n.y == null) n.y = y; y = Math.max(y, n.y) + h + NGAP; });
+  }
   function drawNotifs(t) {
-    const x = 48, w = W - 2 * 48, gap = 26;
-    const bottomMargin = 120, baseStartY = 1030, minStartY = 720; // espacio neutro inferior sin notificaciones
-    const availAtMin = H - bottomMargin - minStartY;
-    let fs = 1, heights, total;
-    const measure = () => {
-      heights = notifs.map((n) => notifHeight(n, fs));
-      total = heights.reduce((a, b) => a + b, 0) + gap * fs * (heights.length - 1);
-    };
-    measure();
-    // Ancho siempre completo: cuando no cabe, se sube y, si sigue sin caber, se reduce la letra.
-    let guard = 0;
-    while (total > availAtMin && fs > 0.55 && guard++ < 14) { fs *= Math.max(0.9, availAtMin / total); measure(); }
-    const startY = Math.min(baseStartY, Math.max(minStartY, H - bottomMargin - total));
-    let y = startY;
+    const x = 48, w = W - 2 * 48;
+    if (notifs.some((n) => n.y == null)) assignDefaultY();
     for (let i = 0; i < notifs.length; i++) {
+      const n = notifs[i], h = notifHeight(n, 1), yTop = clampY(n.y, h);
       const appearAt = 0.35 + i * 0.30, fadeOut = CYCLE - 0.7;
       let op = 0, slide = 0;
       if (t >= appearAt) { const k = Math.min(1, (t - appearAt) / 0.5); op = k; slide = (1 - ease(k)) * 70; }
       if (t >= fadeOut) op *= Math.max(0, 1 - (t - fadeOut) / 0.6);
-      if (op > 0.002) drawNotif(x, y - slide, w, heights[i], notifs[i], op, fs);
-      y += heights[i] + gap * fs;
+      if (op > 0.002) drawNotif(x, yTop - slide, w, h, n, op, 1);
     }
   }
   function render(t) { drawWallpaper(); drawClock(); drawNotifs(t); }
-  let encoding = false, hover = false;
+  let encoding = false, hover = false, drag = null;
+  const DRAG_T = CYCLE * 0.5; // fotograma con todas las notificaciones visibles (para colocarlas)
   const clipEl = canvas.closest(".clip");
   if (clipEl) {
     clipEl.addEventListener("mouseenter", () => { hover = true; start = performance.now(); });
-    clipEl.addEventListener("mouseleave", () => { hover = false; render(0); });
+    clipEl.addEventListener("mouseleave", () => { if (!drag) { hover = false; render(0); } });
   }
   render(0); // fotograma inicial estático; solo se anima con el cursor encima
   function frame(now) {
-    if (!encoding && hover) render(((now - start) / 1000) % CYCLE);
+    if (!encoding) { if (drag) render(DRAG_T); else if (hover) render(((now - start) / 1000) % CYCLE); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+
+  // ---- Arrastrar cada notificación a una posición vertical concreta ----
+  canvas.style.touchAction = "none"; canvas.style.cursor = "grab";
+  const toCanvas = (ev) => { const r = canvas.getBoundingClientRect(); return { x: (ev.clientX - r.left) * W / r.width, y: (ev.clientY - r.top) * H / r.height }; };
+  function notifAt(px, py) {
+    for (let i = notifs.length - 1; i >= 0; i--) {
+      const n = notifs[i], h = notifHeight(n, 1), yTop = clampY(n.y == null ? NTOP : n.y, h);
+      if (px >= 48 && px <= W - 48 && py >= yTop && py <= yTop + h) return { n, off: py - yTop };
+    }
+    return null;
+  }
+  canvas.addEventListener("pointerdown", (ev) => {
+    const p = toCanvas(ev), hit = notifAt(p.x, p.y);
+    if (!hit) return;
+    drag = hit; hover = true; canvas.style.cursor = "grabbing";
+    try { canvas.setPointerCapture(ev.pointerId); } catch (e) {}
+    ev.preventDefault();
+  });
+  canvas.addEventListener("pointermove", (ev) => {
+    if (!drag) return;
+    const p = toCanvas(ev), h = notifHeight(drag.n, 1);
+    drag.n.y = clampY(p.y - drag.off, h); untouched = false; ev.preventDefault();
+  });
+  const endDrag = () => { if (!drag) return; drag = null; canvas.style.cursor = "grab"; hover = true; start = performance.now(); };
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
 
   // ---- Controles ----
   const listEl = document.getElementById("lock-list");
