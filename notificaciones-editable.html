@@ -34,6 +34,9 @@
   .lock-ico{flex:none;width:38px;height:38px;border-radius:9px;overflow:hidden;cursor:pointer;border:1px solid var(--border);background:#140f0b}
   .lock-ico:hover{border-color:var(--accent)}
   .lock-ico__img{display:grid;place-items:center;width:100%;height:100%;background-size:cover;background-position:center}
+  .lock-move{display:flex;flex-direction:column;gap:2px;flex:none}
+  .lock-mv{width:24px;height:18px;padding:0;border:1px solid var(--border);border-radius:6px;background:#140f0b;color:var(--dim);cursor:pointer;font-size:10px;line-height:1;display:grid;place-items:center}
+  .lock-mv:hover{border-color:var(--accent);color:var(--accent)}
   .ico{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .btn{border:0;border-radius:12px;background:var(--accent);color:#160c04;font-weight:800;padding:12px 20px;cursor:pointer}
   .hint{color:var(--dim);font-size:12px;max-width:360px;text-align:center;line-height:1.5}
@@ -186,7 +189,7 @@
   }
   function drawNotifs(t) {
     const x = 48, w = W - 2 * 48, gap = 26;
-    const bottomMargin = 70, baseStartY = 1030, minStartY = 720;
+    const bottomMargin = 120, baseStartY = 1030, minStartY = 720; // espacio neutro inferior sin notificaciones
     const availAtMin = H - bottomMargin - minStartY;
     let fs = 1, heights, total;
     const measure = () => {
@@ -238,6 +241,7 @@
         `<span class="lock-ico__img" style="background-image:url('${esc(src)}')"></span></label>` +
         `<input class="lock-app" placeholder="App" value="${esc(n.app)}">` +
         `<input class="lock-text" placeholder="${langNow() === "en" ? "Notification text" : "Texto de la notificación"}" value="${esc(n.text)}">` +
+        `<div class="lock-move"><button class="lock-mv" data-d="-1" type="button" aria-label="Subir">▲</button><button class="lock-mv" data-d="1" type="button" aria-label="Bajar">▼</button></div>` +
         `<button class="lock-del" type="button" aria-label="Quitar"><svg class="ico"><use href="#i-trash"/></svg></button>`;
       const appI = row.querySelector(".lock-app"), txtI = row.querySelector(".lock-text");
       appI.addEventListener("input", () => { n.app = appI.value; untouched = false; });
@@ -250,6 +254,12 @@
         img.onload = () => { n.icon = img; n.iconSrc = url; iconImg.innerHTML = ""; iconImg.style.backgroundImage = `url('${url}')`; untouched = false; restart(); };
         img.src = url;
       });
+      row.querySelectorAll(".lock-mv").forEach((b) => b.addEventListener("click", () => {
+        const j = i + Number(b.dataset.d);
+        if (j < 0 || j >= notifs.length) return;
+        const tmp = notifs[i]; notifs[i] = notifs[j]; notifs[j] = tmp;
+        untouched = false; renderList(); restart();
+      }));
       row.querySelector(".lock-del").addEventListener("click", () => {
         notifs.splice(i, 1);
         if (!notifs.length) notifs.push({ app: "Rhabit", text: "", color: "#ff7a1a", icon: rhabitIcon, iconSrc: RHABIT_ICON });

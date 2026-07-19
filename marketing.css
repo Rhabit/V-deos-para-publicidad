@@ -133,3 +133,8 @@ body.mk{ min-height:100vh; background:var(--bg); }
   font-size:14px; font-weight:700; letter-spacing:.04em; color:#8a8178; text-transform:uppercase;
 }
 @media(prefers-reduced-motion:reduce){ .mk-loader__spin{ animation-duration:1.6s; } }
+
+/* Reordenar notificaciones (subir/bajar) */
+.lock-move{display:flex;flex-direction:column;gap:2px;flex:none}
+.lock-mv{width:24px;height:18px;padding:0;border:1px solid var(--border);border-radius:6px;background:#140f0b;color:var(--dim);cursor:pointer;font-size:10px;line-height:1;display:grid;place-items:center}
+.lock-mv:hover{border-color:var(--accent);color:var(--accent)}

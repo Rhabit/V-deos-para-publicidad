@@ -118,7 +118,7 @@
   }
   function drawNotifs(t) {
     const x = 48, w = W - 2 * 48, gap = 26;
-    const bottomMargin = 70, baseStartY = 1030, minStartY = 720;
+    const bottomMargin = 120, baseStartY = 1030, minStartY = 720; // espacio neutro inferior sin notificaciones
     const availAtMin = H - bottomMargin - minStartY;
     let fs = 1, heights, total;
     const measure = () => {
@@ -170,6 +170,7 @@
         `<span class="lock-ico__img" style="background-image:url('${esc(src)}')"></span></label>` +
         `<input class="lock-app" placeholder="App" value="${esc(n.app)}">` +
         `<input class="lock-text" placeholder="${langNow() === "en" ? "Notification text" : "Texto de la notificación"}" value="${esc(n.text)}">` +
+        `<div class="lock-move"><button class="lock-mv" data-d="-1" type="button" aria-label="Subir">▲</button><button class="lock-mv" data-d="1" type="button" aria-label="Bajar">▼</button></div>` +
         `<button class="lock-del" type="button" aria-label="Quitar"><svg class="ico"><use href="#i-trash"/></svg></button>`;
       const appI = row.querySelector(".lock-app"), txtI = row.querySelector(".lock-text");
       appI.addEventListener("input", () => { n.app = appI.value; untouched = false; });
@@ -182,6 +183,12 @@
         img.onload = () => { n.icon = img; n.iconSrc = url; iconImg.innerHTML = ""; iconImg.style.backgroundImage = `url('${url}')`; untouched = false; restart(); };
         img.src = url;
       });
+      row.querySelectorAll(".lock-mv").forEach((b) => b.addEventListener("click", () => {
+        const j = i + Number(b.dataset.d);
+        if (j < 0 || j >= notifs.length) return;
+        const tmp = notifs[i]; notifs[i] = notifs[j]; notifs[j] = tmp;
+        untouched = false; renderList(); restart();
+      }));
       row.querySelector(".lock-del").addEventListener("click", () => {
         notifs.splice(i, 1);
         if (!notifs.length) notifs.push({ app: "Rhabit", text: "", color: "#ff7a1a", icon: rhabitIcon, iconSrc: "assets/rhabit-icon.png" });
