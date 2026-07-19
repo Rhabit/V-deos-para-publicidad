@@ -34,7 +34,7 @@
   clips.forEach((clip) => {
     const box = clip.querySelector(".clip__video"); if (!box) return;
     const v = clip.querySelector("video");
-    box.addEventListener("mouseenter", () => { clip.dataset.hover = "1"; if (v) { try { v.currentTime = 0; } catch (e) {} v.play().catch(() => {}); } });
+    box.addEventListener("mouseenter", () => { clip.dataset.hover = "1"; if (v) { try { v.currentTime = 0; } catch (e) {} v.playbackRate = parseFloat(clip.dataset.rate) || 1; v.play().catch(() => {}); } });
     box.addEventListener("mouseleave", () => { clip.dataset.hover = "0"; if (v) v.pause(); });
   });
 
